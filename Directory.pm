@@ -14,7 +14,7 @@ require Exporter;
 @ISA = qw(Exporter);
 @EXPORT_OK = qw(get_dir);
 
-$VERSION = '0.98';
+$VERSION = '0.99';
 
 ######################################################################
 # object interface
@@ -87,7 +87,7 @@ sub parse {
 		$self->doElement('path', undef, $self->{path});
 		$self->doElement('details', undef, $self->{details});
 		$self->doElement('depth', undef, $self->{depth});
-		$self->doElement('orderby', [[code=>($self->{'__orderby'} || "df")]], undef);
+		$self->doElement('orderby', [[code=>$self->order_by()]], undef);
 		$self->doEndElement('head');
 	    }
 	    
@@ -138,22 +138,22 @@ sub get_maxdepth {
 }
 
 sub enable_ns {
-    my ($self) = @_;
+    my $self = shift;
     $self->{ns_enabled} = 1;
 }
 
 sub disable_ns {
-    my ($self) = @_;
+    my $self = shift;
     $self->{ns_enabled} = 0;
 }
 
 sub enable_doctype {
-    my ($self) = @_;
+    my $self = shift;
     $self->{doctype} = 1;
 }
 
 sub disable_doctype {
-    my ($self) = @_;
+    my $self = shift;
     $self->{doctype} = 0;
 }
 
@@ -197,19 +197,18 @@ sub enable_rdf {
 }
 
 sub disable_rdf {
-    my ($self) = @_;
+    my $self = shift;
     $self->{rdf_enabled} = 0;
 }
 
 sub order_by {
-  my $self = shift;
-  my $code = shift;
+  my ($self, $code) = shift;
 
   if (defined($code)) {
     $self->{'__orderby'} = $code;
   }
 
-  return $self->{'__orderby'};
+  return $self->{'__orderby'} || "df";
 }
 
 ######################################################################
@@ -531,15 +530,8 @@ sub _file($$$$) {
 sub _ns_declaration {
     my $self = shift;
     
-    my $decl = '';
-    if ($self->{ns_enabled}) {
-	if ($self->{ns_prefix}) {
-	    $decl = "xmlns:$self->{ns_prefix}";
-	} else {
-	    $decl = 'xmlns';
-	}
-    }
-    return $decl;
+    return '' unless $self->{ns_enabled};
+    return $self->{ns_prefix} ? "xmlns:$self->{ns_prefix}" : 'xmlns';
 }
 
 sub _doUnknownPosition {

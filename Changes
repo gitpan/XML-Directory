@@ -1,6 +1,11 @@
 Revision history for Perl extension XML::Directory
 ==================================================
 
+0.99  Oct 7, 2002
+	- warning caused by order_by() function fixed
+          [patch by Gerhard Wannemacher]
+	- minor optimizations
+
 0.98  Sep 24, 2002
 	- fix in regexp to get the parent directory
           [patch by Gerhard Wannemacher]
