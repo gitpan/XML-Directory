@@ -24,6 +24,8 @@ Perl itself.
 There are no prerequisites for this module. However, if you want to use
 the XML::Directory::Apache module, Apache and mod_perl are required.
 
+To include RDF/N3 meta-data, RDF::Notation3 module is required.
+
 4. Build and Install
 ====================
 
@@ -42,16 +44,21 @@ To install on Windows (with ActivePerl), just replace "make" with "nmake".
 The examples directory contains examples of scripts using this module.
 
 dir2xml.pl
-	command line interface
+	command line interface to old, procedural interface
 	Usage: ./dir2xml.pl <directory>
 
 dir2xml_string.pl
-	command line interface using the XML::Directory class
-	Usage: ./dir2xml.pl <directory>
+	command line interface using the XML::Directory::String class
+	Usage: ./dir2xml_string.pl <directory>
 
 dir2xml_sax.pl
 	command line interface using the XML::Directory SAX generator
-	Usage: ./dir2xml.pl <directory>
+	Usage: ./dir2xml_sax.pl <directory>
+
+dir2xml_rdf.pl
+	command line interface using the XML::Directory String generator
+	with RDF/N3 meta-data (see index.n3)
+	Usage: ./dir2xml_rdf.pl <directory>
 
 MyHandler.pm
 	working template of SAX content handler
@@ -59,7 +66,5 @@ MyHandler.pm
 MyErrorHandler.pm
 	working template of SAX error handler
 
-6. To Do
-========
-
-- reading RDF description
+index.n3
+	an example of RDF/N3 file with files/directories meta-data

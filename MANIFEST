@@ -12,5 +12,7 @@ test.pl
 examples/dir2xml.pl
 examples/dir2xml_string.pl
 examples/dir2xml_sax.pl
+examples/dir2xml_rdf.pl
 examples/MyHandler.pm
 examples/MyErrorHandler.pm
+examples/index.n3

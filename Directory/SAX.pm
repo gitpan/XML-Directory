@@ -44,10 +44,11 @@ sub doEndDocument {
 }
 
 sub doStartElement {
-    my ($self, $tag, $attr) = @_;
+    my ($self, $tag, $attr, $qname) = @_;
     my $SAXattr = {};
     foreach (@$attr) {
-	$SAXattr->{$_->[0]} = XML::Directory::Attribute->new (
+	my $attkey = "{}$_->[0]";
+	$SAXattr->{$attkey} = XML::Directory::Attribute->new (
 	    Name => $_->[0],
 	    Value => $_->[1],
 	    NamespaceURI => '',
@@ -56,7 +57,8 @@ sub doStartElement {
 	)
     };
     my $uri = $self->_ns_uri;
-    my $prefix = $self->_ns_prefix;
+    my $prefix = '';
+    $prefix = $self->_ns_prefix unless $qname;
     my $name = $tag;
     $name = "$prefix:$tag" if $prefix;
 
@@ -70,9 +72,10 @@ sub doStartElement {
 };
 
 sub doEndElement {
-    my ($self, $tag) = @_;
+    my ($self, $tag, $qname) = @_;
     my $uri = $self->_ns_uri;
-    my $prefix = $self->_ns_prefix;
+    my $prefix = '';
+    $prefix = $self->_ns_prefix unless $qname;
     my $name = $tag;
     $name = "$prefix:$tag" if $prefix;
 
@@ -85,12 +88,12 @@ sub doEndElement {
 }
 
 sub doElement {
-    my ($self, $tag, $attr, $value) = @_;
-    $self->doStartElement($tag, $attr);
+    my ($self, $tag, $attr, $value, $qname) = @_;
+    $self->doStartElement($tag, $attr, $qname);
     $self->{ContentHandler}->characters({
 	Data => $value
     });
-    $self->doEndElement($tag);
+    $self->doEndElement($tag, $qname);
 }
 
 sub doError {

@@ -3,11 +3,12 @@
 use XML::Directory::String;
 use strict;
 
-(@ARGV == 1 ) || die ("Usage: dir2xml_string.pl path\n\n");
+(@ARGV == 1 ) || die ("Usage: dir2xml_rdf.pl path\n\n");
 
 my $path = shift;
 
 my $dir = new XML::Directory::String($path,2,5);
+$dir->enable_rdf('index.n3');
 my $rc  = $dir->parse;
 my $xml = $dir->get_arrayref;
 

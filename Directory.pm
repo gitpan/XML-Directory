@@ -10,7 +10,7 @@ require Exporter;
 our @ISA = qw(Exporter);
 
 our @EXPORT_OK = qw(get_dir);
-our $VERSION = '0.70';
+our $VERSION = '0.80';
 
 
 ######################################################################
@@ -29,9 +29,10 @@ sub new {
 	error   => 0,
 	catch_error => 0,	
 	ns_enabled  => 0,
+	rdf_enabled => 0,	
 	ns_uri      => 'http://gingerall.org/directory',
 	ns_prefix   => 'xd',
-
+	encoding    => 'utf-8',	
     };
     bless $self, $class;
     return $self;
@@ -139,6 +140,15 @@ sub get_ns_data {
 	   };
 }
 
+sub encoding {
+    my ($self, $code) = @_;
+    if (@_ > 1) {
+	$self->{encoding} = $code;
+    } else {
+	return $self->{encoding};
+    }
+}
+
 sub error_treatment {
     my ($self, $val) = @_;
     if (@_ > 1) {
@@ -148,6 +158,21 @@ sub error_treatment {
 	return 'die' if $self->{catch_error} == 0;
 	return 'warn' if $self->{catch_error} == 1;
     }
+}
+
+sub enable_rdf {
+    my ($self, $index) = @_;
+    $self->{ns_enabled} = 1;
+    $self->{rdf_enabled} = 1;
+    $self->{n3_index} = $index;
+    eval { require RDF::Notation3; };
+    chomp $@;
+    $self->doError(5,"$@") if $@;
+}
+
+sub disable_rdf {
+    my ($self) = @_;
+    $self->{rdf_enabled} = 0;
 }
 
 ######################################################################
@@ -165,7 +190,17 @@ sub get_dir {
 # private procedures
 
 sub _directory {
-    my ($self, $path, $dirname, $level) = @_;
+    my ($self, $path, $dirname, $level, $rdf_data_P, $rdf_P) = @_;
+
+    # rdf metadata
+    my $rdf_data = 0;
+    my $rdf;
+    if ($self->{rdf_enabled}) {
+	require RDF::Notation3::PrefTriples;
+	$rdf = new RDF::Notation3::PrefTriples;
+	eval {$rdf->parse($self->{n3_index})};
+	$rdf_data = 1 unless $@;
+    }
 
     my @stat = stat '.';
     $dirname =~ s/&/&amp;/;
@@ -174,6 +209,15 @@ sub _directory {
     push @attr, ['depth', $level] if $self->{details} > 1;
     push @attr, ['uid', $stat[4]] if $self->{details} > 2;
     push @attr, ['gid', $stat[5]] if $self->{details} > 2;
+
+    # rdf metadata NS
+    if ($rdf_data) {
+	foreach (keys %{$rdf->{ns}->{$rdf->{context}}}) {
+	    $rdf->{ns}->{$_} =~ s/^<(.*)>$/$1/;
+	    push @attr, 
+	      ["xmlns:$_" => $rdf->{ns}->{$rdf->{context}}->{$_}];
+	} 
+    }
 
     $self->doStartElement('directory', \@attr);
 
@@ -186,6 +230,16 @@ sub _directory {
     $self->doElement('modify-time', [[epoch => $stat[9]]], $mtime) 
       if $self->{details} > 1;
 
+    # rdf metadata for nested dirs
+    if ($self->{details} > 1) {
+	if ($rdf_data_P) {
+	    my $triples = $rdf_P->get_triples("<$dirname>");
+	    foreach (@$triples) {
+		$_->[2] =~ s/^"(.*)"$/$1/;
+		$self->doElement($_->[1],undef,$_->[2],1);
+	    }
+	}
+    }
 
     # nested dirs
     if ($self->{depth} > $level) {
@@ -195,7 +249,7 @@ sub _directory {
 
 	    chdir $d or croak "Cannot chdir to $d, $!\n";
 
-	    $self->_directory($path, $d, $level);
+	    $self->_directory($path, $d, $level, $rdf_data, $rdf);
 
 	    chdir '..'; 
 	}
@@ -206,7 +260,7 @@ sub _directory {
     if ($self->{depth} == $level) {
 	foreach my $d (grep -d, <*>) {
 	    my $path = File::Spec::Functions::catfile($path, $d);
-	    my @stat = stat "$_";
+	    my @stat = stat "$d";
 
 	    $d =~ s/&/&amp;/;
 
@@ -215,20 +269,44 @@ sub _directory {
 	    push @attr, ['uid', $stat[4]] if $self->{details} > 2;
 	    push @attr, ['gid', $stat[5]] if $self->{details} > 2;
 
-	    $self->doElement('directory', \@attr, undef);
+	    if ($self->{details} == 1) {
+		$self->doElement('directory', \@attr, undef)
+	    } else {
+		$self->doStartElement('directory', \@attr);
+
+		$self->doElement('path', undef, $path);
+		my $atime = localtime($stat[8]);
+		my $mtime = localtime($stat[9]);
+		$self->doElement('access-time', [[epoch => $stat[8]]], $atime) 
+		  if $self->{details} > 2;
+		$self->doElement('modify-time', [[epoch => $stat[9]]], $mtime);
+
+		# rdf metadata
+		if ($rdf_data) {
+		    my $triples = $rdf->get_triples("<$d>");
+		    foreach (@$triples) {
+			$_->[2] =~ s/^"(.*)"$/$1/;
+			$self->doElement($_->[1],undef,$_->[2],1);
+		    }
+		}
+		$self->doEndElement('directory');
+	    }
+
 	}
     }
 
     # files
     foreach (grep -f, <*>) {
-	$self->_get_file($_, $level);
+	unless ($_ eq $self->{n3_index}) {
+	    $self->_file($_, $level, $rdf_data, $rdf);
+	}
     }
 
     $self->doEndElement('directory');
 }
 
-sub _get_file($$$$) {
-    my ($self, $name, $level) = @_;
+sub _file($$$$) {
+    my ($self, $name, $level, $rdf_data, $rdf) = @_;
 
     my @stat = stat $name;
     my $esc_name = $name;
@@ -259,6 +337,16 @@ sub _get_file($$$$) {
 	    if $self->{details} > 2;
 	$self->doElement('modify-time', [[epoch => $stat[9]]], $mtime)
 	    if $self->{details} > 1;
+
+	# rdf metadata
+	if ($rdf_data) {
+	    my $triples = $rdf->get_triples("<$name>");
+	    foreach (@$triples) {
+		$_->[2] =~ s/^"(.*)"$/$1/;
+		$self->doElement($_->[1],undef,$_->[2],1);
+	    }
+	}
+
 	$self->doEndElement('file');
     }
 }

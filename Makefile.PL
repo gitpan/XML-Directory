@@ -2,8 +2,9 @@ use ExtUtils::MakeMaker;
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
 # the contents of the Makefile that is written.
 
-$VERSION = '0.70';
+$VERSION = '0.80';
 
+# mandatory stuff
 my $ok = 1;
 my @deps = ('File::Spec',
 	    'Carp',
@@ -14,11 +15,27 @@ foreach (@deps) {
     eval $try;
     if ($@) {
 	print "$_ is missing!\n";
+	print "It must be installed before you can install XML::Directory.\n";
 	$ok = 0;
     }
 }
 
 exit unless $ok;
+
+# optional stuff
+my %opts = (Apache => 'mod_perl interface can not be used',
+	    RDF::Notation3 => 'support of RDF/N3 metadata can not be used',
+	   );
+
+foreach (keys %opts) {
+    my $try = "require $_;";
+    eval $try;
+    if ($@) {
+	print "$_ is missing!\n";
+	print "XML::Directory will be installed with the following limitation:\n";
+	print "=> $opts{$_}!\n\n";
+    }
+}
 
 WriteMakefile(
     'NAME'		=> 'XML::Directory',

@@ -37,15 +37,17 @@ sub doStartDocument {
     my $self = shift;
     $self->{xml} = [];
     $self->{level} = 0;
-    push @{$self->{xml}}, '<?xml version="1.0" encoding="utf-8"?>';
+    push @{$self->{xml}}, 
+      "<?xml version=\"1.0\" encoding=\"$self->{encoding}\"?>";
 }
 
 sub doEndDocument {
 }
 
 sub doStartElement {
-    my ($self, $tag, $attr) = @_;
-    my $pref = $self->_ns_prefix;
+    my ($self, $tag, $attr, $qname) = @_;
+    my $pref = '';
+    $pref = $self->_ns_prefix unless $qname;
     push @{$self->{xml}}, 
       '  ' x $self->{level}++ 
 	. "<$pref" 
@@ -56,8 +58,9 @@ sub doStartElement {
 }
 
 sub doEndElement {
-    my ($self, $tag) = @_;
-    my $pref = $self->_ns_prefix;
+    my ($self, $tag, $qname) = @_;
+    my $pref = '';
+    $pref = $self->_ns_prefix unless $qname;
     push @{$self->{xml}},
       '  ' x --$self->{level} 
 	. "</$pref"  
@@ -66,13 +69,15 @@ sub doEndElement {
 }
 
 sub doElement {
-    my ($self, $tag, $attr, $value) = @_;
-    my $pref = $self->_ns_prefix;
+    my ($self, $tag, $attr, $value, $qname) = @_;
+    my $pref = '';
+    $pref = $self->_ns_prefix unless $qname;
     my $element = '  ' x $self->{level} 
       . "<$pref"  
       . "$tag "
       . join(' ', map {qq/$_->[0]="$_->[1]"/} @$attr) 
       . '>';
+    $element =~ s/ >/>/;
     $element .= $value if $value;
     $element .= "</$pref";
     $element .= "$tag>";

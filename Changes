@@ -1,6 +1,13 @@
 Revision history for Perl extension XML::Directory
 ==================================================
 
+0.80  Oct 9, 2001
+	- support for RDF metadata in RDF/Notation3 files
+	- SAX driver uses the latest PerlSAX2 notation
+	  ({ns}local attributes keys)
+	- XML encoding can be changed for String
+	- minor bug fixes
+
 0.70  Sep 24, 2001
 	- redesigned using a template by Duncan Cameron
 	- escaping & in dir and file names
