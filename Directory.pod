@@ -114,6 +114,8 @@ the constructor. Valid values are 1, 2 or 3.
    </directory>
  </dirtree>
 
+See the C<DTD> chapter for more details.
+
 =item set_maxdepth
 
  $dir->set_maxdepth(5);
@@ -441,9 +443,81 @@ and send a request to:
 The path portion following 'xdir' is taken as path; other parameters can
 be send in query.
 
+=head2 DTD
+
+Resulting XML documents can be of three types. The type of document is specified in the constructor or using the C<set_details> method.
+
+Level of details: 1 (brief)
+
+ <!ELEMENT dirtree (directory)>
+ <!ELEMENT directory (directory, file)>
+ <!ATTLIST directory
+           name CDATA #REQUIRED>
+ <!ELEMENT file EMPTY>
+ <!ATTLIST file
+           name CDATA #REQUIRED>
+
+Level of details: 2 (normal)
+
+ <!ELEMENT dirtree (head, directory)>
+ <!ELEMENT head (path, details, depth)>
+ <!ATTLIST head
+           version CDATA #REQUIRED>
+ <!ELEMENT path (#PCDATA)>
+ <!ELEMENT details (#PCDATA)>
+ <!ELEMENT depth (#PCDATA)>
+ <!ELEMENT directory (directory, file, path, modify-time)>
+ <!ATTLIST directory
+           name CDATA #REQUIRED>
+ <!ELEMENT file (mode, size, modify-time)>
+ <!ATTLIST file
+           name CDATA #REQUIRED>
+ <!ELEMENT modify-time (#PCDATA)>
+ <!ATTLIST modify-time
+           epoch NMTOKEN #REQUIRED>
+ <!ELEMENT mode (#PCDATA)>
+ <!ATTLIST mode
+           code NMTOKEN #REQUIRED>
+ <!ELEMENT size (#PCDATA)>
+ <!ATTLIST size
+           unit CDATA #FIXED "bytes">
+
+Level of details: 3 (verbose)
+
+ <!ELEMENT dirtree (head, directory)>
+ <!ELEMENT head (path, details, depth)>
+ <!ATTLIST head
+           version CDATA #REQUIRED>
+ <!ELEMENT path (#PCDATA)>
+ <!ELEMENT details (#PCDATA)>
+ <!ELEMENT depth (#PCDATA)>
+ <!ELEMENT directory (directory, file, path, modify-time, access-time)>
+ <!ATTLIST directory
+           name CDATA #REQUIRED
+           depth NMTOKEN #REQUIRED
+           uid NMTOKEN #REQUIRED
+           gid NMTOKEN #REQUIRED>
+ <!ELEMENT file (mode, size, modify-time, access-time)>
+ <!ATTLIST file
+           name CDATA #REQUIRED
+           uid NMTOKEN #REQUIRED
+           gid NMTOKEN #REQUIRED>
+ <!ELEMENT modify-time (#PCDATA)>
+ <!ATTLIST modify-time
+           epoch NMTOKEN #REQUIRED>
+ <!ELEMENT access-time (#PCDATA)>
+ <!ATTLIST access-time
+           epoch NMTOKEN #REQUIRED>
+ <!ELEMENT mode (#PCDATA)>
+ <!ATTLIST mode
+           code NMTOKEN #REQUIRED>
+ <!ELEMENT size (#PCDATA)>
+ <!ATTLIST size
+           unit CDATA #FIXED "bytes">
+
 =head1 VERSION
 
-Current version is 0.91.
+Current version is 0.92.
 
 =head1 LICENSING
 

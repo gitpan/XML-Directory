@@ -1,6 +1,11 @@
 Revision history for Perl extension XML::Directory
 ==================================================
 
+0.92  Mar 13, 2002
+	- DTD added to docs
+	- minor portability issues on Solaris 7
+	  [reported by Dustin Cavanaugh]
+
 0.91  Feb 5, 2002
 	- relative paths work
 	- updated 'make test'

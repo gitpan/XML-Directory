@@ -2,17 +2,16 @@ package XML::Directory;
 
 require 5.005_62;
 use strict;
-use warnings;
+use vars qw(@ISA @EXPORT_OK $VERSION);
 use File::Spec::Functions ();
 use Carp;
 use Cwd;
 
 require Exporter;
-our @ISA = qw(Exporter);
+@ISA = qw(Exporter);
+@EXPORT_OK = qw(get_dir);
 
-our @EXPORT_OK = qw(get_dir);
-our $VERSION = '0.91';
-
+$VERSION = '0.92';
 
 ######################################################################
 # object interface

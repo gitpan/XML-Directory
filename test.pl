@@ -49,4 +49,3 @@ $sum = 0;
 foreach (@r) {
     $sum += $_;
 }
-
