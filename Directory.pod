@@ -190,7 +190,7 @@ either 1 or 0
 
 =item uri
 
-namespace URI, 'http://gingerall.org/directory' by default 
+namespace URI, 'http://gingerall.org/directory/1.0/' by default 
 
 =item prefix
 
@@ -212,11 +212,21 @@ a string acceptable for an XML encoding declaration. The default value is
  $dir->enable_rdf('index.n3');
 
 Enables a support of RDF/Notation3 meta-data. The parser looks for files with
-same name as an argument of this method in each directory. If found, the file
+same name as the argument of this method in each directory. If found, the file
 is passed to RDF::Notation3 parser and properties of particular resources
 (files or directories) are merged to resulting XML. The N3 file itself is not
 listed in the XML. See http://www.w3.org/DesignIssues/Notation3.html for more 
 details on RDF/Notation3.
+
+In addition, one more element doc:Position (where doc prefix is bound to
+URI namespace of http://gingerall.org/charlie-doc/1.0/) is added. This element
+contains a position of the first triple with the current document as subject 
+within the triple array, so that the order of files/directories can be 
+controlled using the RDF/N3 file.
+
+If there is a property called doc:Type with value of 'document' found for 
+a directory, sub-directories and files are not processed. This is a way to
+emulate multiple-file documents efficiently.
 
 If, for example, a directory contains a file named Apache.html:
 
@@ -239,6 +249,7 @@ results in:
    <xd:mode code="33188">rw-</xd:mode>
    <xd:size unit="bytes">41913</xd:size>
    <xd:modify-time epoch="999344286">Sat Sep  1 13:38:06 2001</xd:modify-time>
+   <doc:position>1</doc:position>
    <dc:Title>Apache</dc:Title>
    <dc:Description>mod_perl Apache module</dc:Description>
  </xd:file>
@@ -276,7 +287,7 @@ defined. String $dir->{error} property is set to an error number.
  Example of an error message:
 
  <?xml version="1.0" encoding="utf-8"?>
- <dirtree xmlns="http://gingerall.org/directory">
+ <dirtree xmlns="http://gingerall.org/directory/1.0/">
  <error number="3">Path /home/petr/work/done not found!</error>
  </dirtree>
 
@@ -396,7 +407,7 @@ be send in query.
 
 =head1 VERSION
 
-Current version is 0.81.
+Current version is 0.83.
 
 =head1 LICENSING
 

@@ -10,7 +10,7 @@ require Exporter;
 our @ISA = qw(Exporter);
 
 our @EXPORT_OK = qw(get_dir);
-our $VERSION = '0.81';
+our $VERSION = '0.83';
 
 
 ######################################################################
@@ -31,7 +31,7 @@ sub new {
 	ns_enabled  => 0,
 	rdf_enabled => 0,	
 	n3_index    => '',	
-	ns_uri      => 'http://gingerall.org/directory',
+	ns_uri      => 'http://gingerall.org/directory/1.0/',
 	ns_prefix   => 'xd',
 	encoding    => 'utf-8',	
     };
@@ -61,6 +61,9 @@ sub parse {
 		my @attr = ();
 		my $decl = $self->_ns_declaration;
 		push @attr, [$decl => $self->{ns_uri}];
+		push @attr, ['xmlns:doc' => 
+			     'http://gingerall.org/charlie-doc/1.0/']
+		  if $self->{rdf_enabled};
 		$self->doStartElement('dirtree', \@attr);
 	    } else {
 		$self->doStartElement('dirtree', undef);
@@ -194,8 +197,10 @@ sub _directory {
     my ($self, $path, $dirname, $level, $rdf_data_P, $rdf_P) = @_;
 
     # rdf metadata
-    my $rdf_data = 0;
-    my $rdf;
+    my $rdf_data = 0;       # RDF/N3 meta-data found or not
+    my $doc_prefix = 'doc'; # default prefix
+    my $rdf;                # rdf object
+    my $stop = 0;           # end of recursion controlled by meta-data
     if ($self->{rdf_enabled}) {
 	require RDF::Notation3::PrefTriples;
 	$rdf = new RDF::Notation3::PrefTriples;
@@ -214,7 +219,10 @@ sub _directory {
     # rdf metadata NS
     if ($rdf_data) {
 	foreach (keys %{$rdf->{ns}->{$rdf->{context}}}) {
-	    $rdf->{ns}->{$_} =~ s/^<(.*)>$/$1/;
+	    if ($rdf->{ns}->{$rdf->{context}}->{$_} eq 
+		'http://gingerall.org/charlie-doc/1.0/') {
+		$doc_prefix = $_;
+	    }
 	    push @attr, 
 	      ["xmlns:$_" => $rdf->{ns}->{$rdf->{context}}->{$_}];
 	} 
@@ -234,10 +242,23 @@ sub _directory {
     # rdf metadata for nested dirs
     if ($self->{details} > 1) {
 	if ($rdf_data_P) {
+	    my $all_triples = $rdf_P->get_triples;
+	    for (my $i = 0; $i < scalar @$all_triples; $i++) {
+		if ($all_triples->[$i]->[0] eq "<$dirname>") {
+		    $self->doElement("$doc_prefix:Position",undef,$i+1,1);
+		    last;
+		}
+	    }
 	    my $triples = $rdf_P->get_triples("<$dirname>");
 	    foreach (@$triples) {
 		$_->[2] =~ s/^"(.*)"$/$1/;
 		$self->doElement($_->[1],undef,$_->[2],1);
+
+		# looking for doc:Type = 'document'
+		$_->[1] =~ s/^([_a-zA-Z]\w*)*:/$rdf_P->{ns}->{'<>'}->{$1}/;
+		$stop = 1
+		  if $_->[1] eq 'http://gingerall.org/charlie-doc/1.0/Type' 
+		    and $_->[2] eq 'document';
 	    }
 	}
     }
@@ -248,11 +269,11 @@ sub _directory {
 	foreach my $d (grep -d, <*>) {
 	    my $path = File::Spec::Functions::catfile($path, $d);
 
-	    chdir $d or croak "Cannot chdir to $d, $!\n";
-
-	    $self->_directory($path, $d, $level, $rdf_data, $rdf);
-
-	    chdir '..'; 
+	    unless ($stop) {
+		chdir $d or croak "Cannot chdir to $d, $!\n";
+		$self->_directory($path, $d, $level, $rdf_data, $rdf);
+		chdir '..'; 
+	    }
 	}
 	$level--;
     }
@@ -284,6 +305,13 @@ sub _directory {
 
 		# rdf metadata
 		if ($rdf_data) {
+ 		    my $all_triples = $rdf->get_triples;
+		    for (my $i = 0; $i < scalar @$all_triples; $i++) {
+			if ($all_triples->[$i]->[0] eq "<$d>") {
+			    $self->doElement("$doc_prefix:Position",undef,$i+1,1);
+			    last;
+			}
+		    }
 		    my $triples = $rdf->get_triples("<$d>");
 		    foreach (@$triples) {
 			$_->[2] =~ s/^"(.*)"$/$1/;
@@ -292,14 +320,15 @@ sub _directory {
 		}
 		$self->doEndElement('directory');
 	    }
-
 	}
     }
 
     # files
-    foreach (grep -f, <*>) {
-	unless ($_ eq $self->{n3_index}) {
-	    $self->_file($_, $level, $rdf_data, $rdf);
+    unless ($stop) {
+	foreach (grep -f, <*>) {
+	    unless ($_ eq $self->{n3_index}) {
+		$self->_file($_, $level, $rdf_data, $rdf, $doc_prefix);
+	    }
 	}
     }
 
@@ -307,7 +336,7 @@ sub _directory {
 }
 
 sub _file($$$$) {
-    my ($self, $name, $level, $rdf_data, $rdf) = @_;
+    my ($self, $name, $level, $rdf_data, $rdf, $doc_prefix) = @_;
 
     my @stat = stat $name;
     my $esc_name = $name;
@@ -341,6 +370,13 @@ sub _file($$$$) {
 
 	# rdf metadata
 	if ($rdf_data) {
+	    my $all_triples = $rdf->get_triples;
+	    for (my $i = 0; $i < scalar @$all_triples; $i++) {
+		if ($all_triples->[$i]->[0] eq "<$name>") {
+		    $self->doElement("$doc_prefix:Position",undef,$i+1,1);
+		    last;
+		}
+	    }
 	    my $triples = $rdf->get_triples("<$name>");
 	    foreach (@$triples) {
 		$_->[2] =~ s/^"(.*)"$/$1/;
