@@ -20,6 +20,8 @@ sub new {
     $options->{details} = 2  unless $options->{details};
     $options->{depth} = 1000 unless $options->{depth};
 
+    $options->{path} = cwd if $options->{path} eq '.';
+
     $options->{path} = File::Spec::Functions::canonpath($options->{path});
     $options->{error} = 0;
     $options->{catch_error} = 0;
@@ -54,6 +56,11 @@ sub parse_dir {
 	return -1;
     }
 
+}
+
+sub parse_file {
+    my $self = shift;
+    return $self->parse_dir(@_);
 }
 
 sub _parse_bytestream {

@@ -443,7 +443,7 @@ be send in query.
 
 =head1 VERSION
 
-Current version is 0.90.
+Current version is 0.91.
 
 =head1 LICENSING
 

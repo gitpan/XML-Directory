@@ -2,11 +2,11 @@
 ==============
 
 XML::Directory - Perl extension to get a content of directory including 
-sub-directories as an XML file. The current version is 0.70. See Changes
+sub-directories as an XML file. The current version is 0.91. See Changes
 for a list of recent changes.
 
-!!! There is one important change of the interface: The XML::Directory
-class is no more used directly; instead derived subclasses 
+!!! There is one important change of the interface for v0.70 or later: 
+The XML::Directory class is no more used directly; instead derived subclasses 
 XML::Directory::String and XML::Directory::SAX are to be used. All methods
 supported by previous versions work for subclasses (when it makes sense),
 so nothing has to be modified but constructors.
@@ -21,11 +21,13 @@ Perl itself.
 3. Prerequisites
 ================
 
-There are no prerequisites for this module. However, if you want to use
-the XML::Directory::Apache module, Apache and mod_perl are required.
+There are no strict prerequisites for this module. However, if you want to 
+use the XML::Directory::Apache module, Apache and mod_perl are required.
 
 To include RDF/N3 meta-data, RDF::Notation3 module version 0.30 or later
 is required.
+
+To use XML::Directory::SAX, XML::SAX::Base module is required.
 
 4. Build and Install
 ====================

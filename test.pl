@@ -1,9 +1,14 @@
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.pl'
 
+BEGIN {
+    unshift @INC, 'examples';
+}
+
 use XML::Directory(qw(get_dir));
 use XML::Directory::String;
 use XML::Directory::SAX;
+use Cwd;
 
 BEGIN { $| = 1; print "1..4\n"; }
 END {print "There were problems!\n" unless $sum == 4;}
@@ -30,10 +35,13 @@ print "not ok 3\n" unless $r[2];
 print "ok 3\n" if $r[2];
 
 #4
-my $sax = new XML::Directory::SAX('examples',1,$depth0);
-$sax->error_treatment('warn');
-my $rc  = $sax->parse;
-$r[3] = 1 if $@ =~ /not set/; 
+use MyHandler;
+use MyErrorHandler;
+my $h = MyHandler->new();
+my $e = MyErrorHandler->new();
+my $dir = XML::Directory::SAX->new(Handler => $h, details => 3);
+my $rc  = $dir->get_details;
+$r[3] = 1 if $rc == 3; 
 print "not ok 4\n" unless $r[3];
 print "ok 4\n" if $r[3];
 
@@ -41,3 +49,4 @@ $sum = 0;
 foreach (@r) {
     $sum += $_;
 }
+

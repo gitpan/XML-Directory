@@ -1,6 +1,10 @@
 Revision history for Perl extension XML::Directory
 ==================================================
 
+0.91  Feb 5, 2002
+	- relative paths work
+	- updated 'make test'
+
 0.90  Feb 4, 2002
 	- support for symbolic links [suggested by Chris Snyder]
 	- fixes for RDF meta-data stuff (namespaces, position)

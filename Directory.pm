@@ -11,7 +11,7 @@ require Exporter;
 our @ISA = qw(Exporter);
 
 our @EXPORT_OK = qw(get_dir);
-our $VERSION = '0.90';
+our $VERSION = '0.91';
 
 
 ######################################################################
@@ -22,6 +22,8 @@ sub new {
     $path = cwd   unless @_ > 1;
     $details = 2  unless @_ > 2;
     $depth = 1000 unless @_ > 3;
+
+    $path = cwd if $path eq '.';
 
     my $self = {
 	path    => File::Spec::Functions::canonpath($path),
@@ -54,8 +56,9 @@ sub parse {
 	$self->{seq} = 1; # a sequence used for doc:Position
 
 	eval {
-
 	    chdir ($self->{path}) or die "Path $self->{path} not found!\n";
+	    # turning relative paths to absolute ones
+	    $self->{path} = cwd;
 	    my @dirs = File::Spec::Functions::splitdir($self->{path});
 	    my $dirname = pop @dirs;
 
@@ -191,7 +194,7 @@ sub get_dir {
     
     require XML::Directory::String;
     my $h = XML::Directory::String->new(@_);
-    $h->parse;
+    $h->parse_dir;
     return @{$h->{xml}};
 }
 
