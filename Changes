@@ -9,3 +9,8 @@ Revision history for Perl extension XML::Directory.
 	- maximal number of nested sub-directories can be limited
 	  (maximal depth)
 	- number of details is controlled (brief, normal, verbose)
+
+0.41  Aug 24, 2001
+	- get_string method added
+	- error handling
+	- fixed a maxdepth defaulting bug

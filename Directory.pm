@@ -8,7 +8,7 @@ require Exporter;
 our @ISA = qw(Exporter);
 
 our @EXPORT_OK = qw(get_dir);
-our $VERSION = '0.40';
+our $VERSION = '0.41';
 
 
 ######################################################################
@@ -16,15 +16,16 @@ our $VERSION = '0.40';
 
 sub new {
     my ($class, $path, $details, $depth) = @_;
-    $details = 2 unless $details;
-    $depth = 1000 unless $depth >= 0;
+    $details = 2 unless @_ > 2;
+    $depth = 1000 unless @_ > 3;
     my $xml = [];
 
     my $self = {
 		path    => $path,
 		details => $details,
 		depth   => $depth,
-		xml     => $xml
+		xml     => $xml,
+		error   => 0
 	       };
     bless $self, $class;
     return $self;
@@ -32,24 +33,43 @@ sub new {
 
 sub parse {
     my $self = shift;
-    my @xml =  get_dir($self->{path},$self->{details},$self->{depth});
+    my @xml = ();
+
+    if ($self->{details} !~ /^[123]$/) {
+	@xml = $self->_set_error(1,"Details value ($self->{details}) invalid!")
+    }
+    if ($self->{depth} !~ /^\d+$/) {
+	@xml = $self->_set_error(2,"Depth value ($self->{depth}) invalid!")
+    }
+    if ($self->{error} == 0) {
+	eval {
+	    @xml =  get_dir($self->{path},$self->{details},$self->{depth});
+	};
+    }
+    if ($@) {
+	chomp $@;
+	@xml = $self->_set_error(3,"$@")
+    }
     $self->{xml} = \@xml;
     return scalar(@xml);
 }
 
 sub set_path {
-    my $self = shift;
-    $self->{path} = shift;
+    my ($self, $path) = @_;
+    $path = '.' unless @_ > 1;
+    $self->{path} = $path;
 }
 
 sub set_details {
-    my $self = shift;
-    $self->{details} = shift;
+    my ($self, $details) = @_;
+    $details = 2 unless @_ > 1;
+    $self->{details} = $details;
 }
 
 sub set_maxdepth {
-    my $self = shift;
-    $self->{depth} = shift;
+    my ($self, $depth) = @_;
+    $depth = 1000 unless @_ > 1;
+    $self->{depth} = $depth;
 }
 
 sub get_arrayref {
@@ -61,6 +81,12 @@ sub get_array {
     my $self = shift;
     my $xml = $self->{xml};
     return @$xml;
+}
+
+sub get_string {
+    my $self = shift;
+    my $xml = $self->{xml};
+    return join "\n", @$xml, '';
 }
 
 sub get_path {
@@ -78,19 +104,29 @@ sub get_maxdepth {
     return $self->{depth};
 }
 
+sub _set_error {
+    my $self = shift;
+    my $num = shift;
+    my $msg = shift;
+    my @err = ();
+    push @err, '<?xml version="1.0" encoding="utf-8"?>';
+    push @err, '<dirtree>';
+    push @err, "<error number=\"$num\">$msg</error>";
+    push @err, '</dirtree>';
+    $self->{error} = $num;
+    return @err;
+}
+
 ######################################################################
 # original interface
 
 sub get_dir {
-
-    my $path = shift;
-    my $details = shift;
-    my $depth = shift;
-    if ($path =~ /^(.*)[\\\/]$/) {$path = $1}
-    $details = 3 unless $details;
+    my ($path, $details, $depth) = @_;
+    $details = 3 unless @_ > 1;
     $depth = 1000 unless @_ > 2;
+    if ($path =~ /^(.*)[\\\/]$/) {$path = $1}
 
-    chdir $path;
+    chdir ($path) or die "Path $path not found!\n";
 
     my $res = [];
     my @dirs = split("/",$path);
@@ -222,7 +258,7 @@ __END__
 =head1 NAME
 
 XML::Directory - Perl extension allowing to get a content of directory 
-including sub-directories as an XML file. The current version is 0.40.
+including sub-directories as an XML file. The current version is 0.41.
 
 =head1 SYNOPSIS
 
@@ -236,6 +272,7 @@ including sub-directories as an XML file. The current version is 0.40.
 
  $res = $dir->get_arrayref;
  @res = $dir->get_array;
+ $res = $dir->get_string;
 
 or
 
@@ -277,7 +314,7 @@ the constructor. Valid values are 1, 2 or 3.
 
  1 = brief
 
-Example:
+ Example:
 
  <?xml version="1.0" encoding="utf-8"?>
  <dirtree>
@@ -288,7 +325,7 @@ Example:
 
  2 = normal
 
-Example:
+ Example:
 
  <?xml version="1.0" encoding="utf-8"?>
  <dirtree>
@@ -305,7 +342,7 @@ Example:
 
  3 = verbose
 
-Example:
+ Example:
 
  <?xml version="1.0" encoding="utf-8"?>
  <dirtree>
@@ -337,6 +374,17 @@ is parsed (no sub-directories).
 Scans directory tree specified by path and stores its XML representation 
 in memory. Returns a number of lines of the XML file.
 
+This method checks a validity of details and depth. In the event a parameter
+is out of valid range, an XML file containing error message is returned. The
+same is true if the path specified can't be found.
+
+ Example:
+
+ <?xml version="1.0" encoding="utf-8"?>
+ <dirtree>
+ <error number="3">Path /home/petr/work/done not found!</error>
+ </dirtree>
+
 =item get_arrayref
 
  $res = $dir->get_arrayref;
@@ -350,6 +398,12 @@ contains one line of the XML file).
 
 Returns a parsed XML directory image as an array (each field 
 contains one line of the XML file).
+
+=item get_string
+
+ $res = $dir->get_string;
+
+Returns a parsed XML directory image as a string.
 
 =item get_path
 

@@ -2,7 +2,8 @@
 ==============
 
 XML::Directory - Perl extension to get a content of directory including 
-sub-directories as an XML file. The current version is 0.40.
+sub-directories as an XML file. The current version is 0.41. See Changes
+for a list of recent changes.
 
 2. License
 ==========
@@ -41,3 +42,8 @@ dir2xml_cgi.pl: a CGI/mod_perl interface (requires CGI_Lite)
 
 dir2xml_oo.pl: a command line interface using the XML::Directory class
 	Usage: ./dir2xml.pl <directory>
+
+6. To Do
+========
+
+- SAX interface
