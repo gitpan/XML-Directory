@@ -3,7 +3,7 @@ package XML::Directory::Apache;
 require 5.005_62;
 use strict;
 use warnings;
-use XML::Directory;
+use XML::Directory::String;
 use Apache::Constants qw(:common );
 
 
@@ -20,8 +20,9 @@ sub handler {
 
     if ($path) {
 
-	my $dir = new XML::Directory($path,$dets,$depth);
+	my $dir = new XML::Directory::String($path,$dets,$depth);
 	$dir->enable_ns if $query{ns} == 1;
+	$dir->error_treatment('warn');
 	my $rc  = $dir->parse;
 	$ret = $dir->get_string;
 

@@ -3,13 +3,14 @@ MANIFEST
 README
 Makefile.PL
 Directory.pm
-Directory/SAXGenerator.pm
+Directory.pod
+Directory/String.pm
+Directory/SAX.pm
 Directory/Exception.pm
 Directory/Apache.pm
 test.pl
 examples/dir2xml.pl
-examples/dir2xml_cgi.pl
-examples/dir2xml_oo.pl
+examples/dir2xml_string.pl
 examples/dir2xml_sax.pl
 examples/MyHandler.pm
 examples/MyErrorHandler.pm

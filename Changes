@@ -1,6 +1,11 @@
 Revision history for Perl extension XML::Directory
 ==================================================
 
+0.70  Sep 24, 2001
+	- redesigned using a template by Duncan Cameron
+	- escaping & in dir and file names
+	- improved error handling
+
 0.60  Sep 7, 2001
 	- mod_perl interface added
 	- support for namespaces (optional)

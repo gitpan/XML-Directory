@@ -1,0 +1,361 @@
+# Below is a documentation.
+
+=head1 NAME
+
+XML::Directory - returns a content of directory as XML.
+
+=head1 SYNOPSIS
+
+ use XML::Directory::String;
+ $dir = new XML::Directory::String('/home/petr',3,10);
+ $rc = $dir->parse;
+ @res = $dir->get_array;
+
+or
+
+ use XML::Directory::SAX;
+ use MyHandler;
+ $dir = new XML::Directory::SAX('/home/petr',3,10);
+ $h = new MyHandler;
+ $dir->set_content_handler($h);
+ $rc = $dir->parse;
+
+=head1 DESCRIPTION
+
+This extension provides two classes: XML::Directory::String and
+XML::Directory::SAX. Their methods make it possible to set parameters
+such as level of details or maximal number of nested sub-directories
+and generate either string containing the resulting XML or SAX events.
+
+The SAX generator supports both SAX1 and SAX2 handlers. There are two
+SAX interfaces available: basic ContentHandler and optional ErrorHandler.
+
+The original function (get_dir) is still supported via XML::Directory
+base class.
+
+ use XML::Directory(qw(get_dir));
+ my @xml = get_dir('/home/petr');
+
+=head2 METHODS COMMON TO BOTH CLASSES
+
+Methods common to both classes are defined in the XML::Directory
+base class.
+
+=over
+
+=item new
+
+ $dir = new XML::Directory('/home/petr',2,5);
+ $dir = new XML::Directory('/home/petr',2);
+ $dir = new XML::Directory('/home/petr');
+
+The constructor accepts up to 3 parameters: path, details (1-3, brief or 
+verbose XML) and depth (number of nested sub-directories). The last two 
+parameters are optional (defaulted to 2 and 1000).
+
+=item set_path
+
+ $dir->set_path('/home/petr');
+
+Resets path. An initial path is set using the constructor.
+
+=item set_details
+
+ $dir->set_details(3);
+
+Sets or resets level of details to be returned. Can be also set using 
+the constructor. Valid values are 1, 2 or 3.
+
+ 1 = brief
+
+ Example:
+
+ <?xml version="1.0" encoding="utf-8"?>
+ <dirtree>
+   <directory name="test">
+     <file name="dir2xml.pl"/>
+   </directory>
+ </dirtree>
+
+ 2 = normal
+
+ Example:
+
+ <?xml version="1.0" encoding="utf-8"?>
+ <dirtree>
+   <head version="0.70">
+     <path>/home/petr/test</path>
+     <details>2</details>
+     <depth>5</depth>
+   </head>
+   <directory name="test" depth="0">
+     <path></path>
+     <modify-time epoch="998300843">Mon Aug 20 11:47:23 2001</modify-time>
+     <file name="dir2xml.pl">
+       <mode code="33261">rwx</mode>
+       <size unit="bytes">225</size>
+       <modify-time epoch="998300843">Mon Aug 20 11:47:23 2001</modify-time>
+     </file>
+   </directory>
+ </dirtree>
+
+ 3 = verbose
+
+ Example:
+
+ <?xml version="1.0" encoding="utf-8"?>
+ <dirtree>
+   <head version="0.70">
+     <path>/home/petr/test</path>
+     <details>3</details>
+     <depth>5</depth>
+   </head>
+   <directory name="test" depth="0" uid="500" gid="100">
+     <path></path>
+     <access-time epoch="999857485">Fri Sep  7 12:11:25 2001</access-time>
+     <modify-time epoch="998300843">Mon Aug 20 11:47:23 2001</modify-time>
+     <file name="dir2xml.pl" uid="500" gid="100">
+       <mode code="33261">rwx</mode>
+       <size unit="bytes">225</size>
+       <access-time epoch="998300843">Mon Aug 20 11:47:23 2001</access-time>
+        <modify-time epoch="998300843">Mon Aug 20 11:47:23 2001</modify-time>
+     </file>
+   </directory>
+ </dirtree>
+
+=item set_maxdepth
+
+ $dir->set_maxdepth(5);
+
+Sets or resets number of nested sub-directories to be parsed. Can also be
+set using the constructor. 0 means that only a directory specified by path 
+is parsed (no sub-directories).
+
+=item parse
+
+ $rc  = $dir->parse;
+
+Scans directory tree specified by path. When used from the
+XML::Directory::String class instance it stores its XML representation 
+in memory ($dir->{xml}) and returns a number of lines. For 
+XML::Directory::SAX it generate SAX events and returns a result of
+the end_document function.
+
+This method checks a validity of details and depth. In the event a parameter
+is out of valid range, an error occurs. The same is true if the path 
+specified can't be found. For SAX, missing content handler is also treated 
+as error.
+
+=item get_path
+
+ $path = $dir->get_path;
+
+Returns current path.
+
+=item get_details
+
+ $details = $dir->get_details;
+
+Returns current level of details.
+
+=item get_maxdepth
+
+ $maxdepth = $dir->get_maxdepth;
+
+Returns current number of nested sub-directories.
+
+=item enable_ns;
+
+ $dir->enable_ns; 
+
+Enables a support for namespaces.
+
+=item disable_ns;
+
+ $dir->disable_ns; 
+
+Disables a support for namespaces.
+
+=item get_ns_data;
+
+ $ns  = $dir->get_ns_data;
+
+Returns a hash reference with the following keys:
+
+=over
+
+=item enabled
+
+either 1 or 0
+
+=item uri
+
+namespace URI, 'http://gingerall.org/directory' by default 
+
+=item prefix
+
+namespace prefix, 'xd' by default
+
+=back
+
+=item error_treatment
+
+ $et = $dir->error_treatment;
+ $dir->error_treatment('warn');
+
+Gets or sets a way errors are treated in. There are two possible
+values:
+
+=over
+
+=item die 
+
+The parse method dies (actually croaks) on an error. Default value.
+
+=item warn
+
+The parse methods catches the error. String generator returns an XML error
+message. SAX driver throws a SAX exception and calls an error handler if
+defined. String $dir->{error} property is set to an error number.
+
+ Example of an error message:
+
+ <?xml version="1.0" encoding="utf-8"?>
+ <dirtree xmlns="http://gingerall.org/directory">
+ <error number="3">Path /home/petr/work/done not found!</error>
+ </dirtree>
+
+=back
+
+=back
+
+=head2 XML::DIRECTORY::STRING
+
+=over
+
+=item get_arrayref
+
+ $res = $dir->get_arrayref;
+
+Returns a parsed XML directory image as a reference to array (each field 
+contains one line of the XML file).
+
+=item get_array
+
+ @res = $dir->get_array;
+
+Returns a parsed XML directory image as an array (each field 
+contains one line of the XML file).
+
+=item get_string
+
+ $res = $dir->get_string;
+
+Returns a parsed XML directory image as a string.
+
+=back
+
+=head2 XML::DIRECTORY::SAX
+
+=over
+
+=item set_content_handler
+
+ $h = new MyHandler;
+ $dir->set_content_handler($h);
+
+Sets SAX content handler.
+
+=item set_error_handler
+
+ $e = new MyErrorHandler;
+ $dir->set_error_handler($e);
+
+Sets SAX error handler.
+
+=back
+
+=head2 ORIGINAL INTERFACE
+
+=over
+
+=item get_dir();
+
+ @xml = get_dir('/home/petr',2,5);
+
+This functions takes a path as a mandatory parameter and details and depth
+as optional ones. It returns an array containing an XML representation of 
+directory specified by the path. Each field of the array represents one line 
+of the XML.
+
+Optional arguments are defaulted to 2 and 1000.
+
+=back
+
+=head2 XML::DIRECTORY::APACHE
+
+This is a mod_perl module that serves as an Apache interface to
+XML::Directory::String. It allows to send parameters in http request and
+receive a result (XML representation of a directory tree) in http
+response. Errors are caught and sent as XML via http to prevent Apache error.
+
+Parameters include:
+
+=over
+
+=item path
+
+absolute path to a directory to be parsed, mandatory
+
+The path is not send in query but as an extra path instead. This seems to
+be more appropriate for this kind of parameter.
+
+=item dets
+
+level of details, optional
+
+=item depth
+
+maximal number of nested sub-directories, optional
+
+=item ns
+
+if set to 1, namespaces are used, optional
+
+=back
+
+To use this module, add a similar section to your Apache config file
+
+ <Location /xdir>
+     SetHandler perl-script
+     PerlHandler XML::Directory::Apache
+     PerlSendHeader On
+ </Location>
+
+and send a request to:
+
+ http://hostname/xdir/home/petr/work[?dets=1&depth=1&ns=1]
+
+The path portion following 'xdir' is taken as path; other parameters can
+be send in query.
+
+=head1 VERSION
+
+Current version is 0.70.
+
+=head1 LICENSING
+
+Copyright (c) 2001 Ginger Alliance. All rights reserved. This program is free 
+software; you can redistribute it and/or modify it under the same terms as 
+Perl itself. 
+
+=head1 AUTHOR
+
+Petr Cimprich, petr@gingerall.cz,
+Duncan Cameron, dcameron@bcs.org.uk
+
+=head1 SEE ALSO
+
+perl(1).
+
+=cut

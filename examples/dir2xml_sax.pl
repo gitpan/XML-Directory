@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-use XML::Directory;
+use XML::Directory::SAX;
 use MyHandler;
 use MyErrorHandler;
 use strict;
@@ -9,7 +9,7 @@ use strict;
 
 my $path = shift;
 
-my $dir = new XML::Directory($path);
+my $dir = new XML::Directory::SAX($path);
 
 $dir->set_maxdepth(10);
 $dir->set_details(3);
@@ -17,6 +17,9 @@ $dir->set_details(3);
 my $h = new MyHandler;
 my $e = new MyErrorHandler;
 
-my $rc  = $dir->parse_SAX($h,$e);
+$dir->set_content_handler($h);
+$dir->set_error_handler($e);
+
+my $rc  = $dir->parse;
 
 exit 0;

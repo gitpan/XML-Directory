@@ -17,13 +17,14 @@ sub end_document {
     my ($self, $document) = @_;
     
     print "Ending document\n";
+    return 1;
 }
 
 sub start_element {
     my ($self, $element) = @_;
     
     print "<$element->{Name} ";
-#   print "xmlns=\"$element->{NamespaceURI}\" ";
+#   print "xmlns:$element->{Prefix}=\"$element->{NamespaceURI}\" ";
     foreach (keys %{$element->{Attributes}}) {
 #   SAX2 way
     print "$element->{Attributes}->{$_}->{Name}=\"$element->{Attributes}->{$_}->{Value}\" ";
