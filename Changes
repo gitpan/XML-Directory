@@ -1,6 +1,10 @@
 Revision history for Perl extension XML::Directory.
 ===================================================
 
+0.51  Aug 30, 2001
+	- fixed a SAX return value error
+	- last level directories added
+
 0.50  Aug 29, 2001
 	- SAX generator added (parse_SAX, set_content_handler and
 	  set_error_handler methods)

@@ -127,6 +127,7 @@ sub parse_SAX {
     $self->{ContentHandler} = $handler if @_ > 1;
     $self->{ErrorHandler} = $err_handler if @_ > 2;
     my $exception;
+    my $ret = undef;
 
     if ($self->{details} !~ /^[123]$/) {
 	$exception = new XML::Directory::Exception (
@@ -148,10 +149,10 @@ sub parse_SAX {
     }
     if ($self->{error} == 0) {
 	eval {
-	    _get_dir_SAX($self->{ContentHandler},
-			 $self->{path},
-			 $self->{details},
-			 $self->{depth});
+	    $ret = _get_dir_SAX($self->{ContentHandler},
+				$self->{path},
+				$self->{details},
+				$self->{depth});
 	};
     }
     if ($@) {
@@ -167,10 +168,8 @@ sub parse_SAX {
 	if (ref($self->{ErrorHandler})) {
 	    $self->{ErrorHandler}->fatal_error($exception);
 	}
-	return -1;
-    } else {
-	return 1;
     }
+    return $ret;
 }
 
 ######################################################################
@@ -192,27 +191,32 @@ sub get_dir {
 
     my @stat = stat '.';
 
-    my $line = "  <directory name=\"$last_dir\"";
-    $line .= " depth=\"0\"" if $details > 1;
-    $line .= " uid=\"$stat[4]\" gid=\"$stat[5]\"" if $details > 2;
-    $line .= '>';
-    push @$res, $line;
-    push @$res, "    <path>$path</path>"if $details > 1;
-    my $atime = localtime($stat[8]);
-    my $mtime = localtime($stat[9]);
-    push @$res, "    <access-time epoch=\"$stat[8]\">$atime</access-time>"
-      if $details > 2;
-    push @$res, "    <modify-time epoch=\"$stat[9]\">$mtime</modify-time>"
-      if $details > 1;
+    _get_current_dir($res,$details,0,$last_dir,$path,'  ',@stat);    
 
+    # nested dirs
+    if ($depth > 0) {
+	_recursive($res,1,$path,$details,$depth); 
+    }
+
+    # final dirs
+    if ($depth == 0) {
+	foreach (<*>) {
+	    if (-d $_) {
+		my @dst = stat "$_";
+		my $dp;
+		if ($^O =~ /win/io) {$dp = "$path\\$_"}
+		else {$dp = "$path/$_"}
+		_get_current_dir($res,$details,1,$_,$dp,'    ',@dst);    
+		push @$res, '    </directory>';
+	    }
+	}
+    }
+
+    # files
     foreach (<*>) {
 	if (-f $_) {
 	    _get_file($res, $_, '  ', $details);
 	}
-    }
-
-    if ($depth > 0) {
-	_recursive($res,1,$path,$details,$depth); 
     }
 
     push @$res, '  </directory>', '</dirtree>';
@@ -252,29 +256,38 @@ sub _recursive {
 
 	    my @stat = stat "$d";
 
-	    my $line = "$indent<directory name=\"$d\"";
-	    $line .= " depth=\"$i\"" if $details > 1;
-	    $line .= " uid=\"$stat[4]\" gid=\"$stat[5]\"" if $details > 2;
-	    $line .= '>';
-	    push @$res, $line;
-	    push @$res, "  $indent<path>$path</path>" if $details > 1;;
-	    my $atime = localtime($stat[8]);
-	    my $mtime = localtime($stat[9]);
-	    push @$res, "  $indent<access-time epoch=\"$stat[8]\">$atime</access-time>" if $details > 2;
-	    push @$res, "  $indent<modify-time epoch=\"$stat[9]\">$mtime</modify-time>" if $details > 1;
+	    _get_current_dir($res,$details,$i,$d,$path,$indent,@stat);    
 
 	    chdir $d;
 
-	    foreach (<*>) {
-		if (-f $_) {
-		    _get_file($res, $_, $indent, $details);
-		}
-	    }
-
+	    # nested dirs
 	    if ($depth > $i) {
 		$i++;
 		_recursive($res,$i,$path,$details,$depth); 
 		$i--; 
+	    }
+
+	    # final dirs
+	    unless ($depth > $i) {
+		my $j = $i + 1;
+		my $ind = $indent . '  ';
+		foreach (<*>) {
+		    if (-d $_) {
+			my @dst = stat "$_";
+			my $dp;
+			if ($^O =~ /win/io) {$dp = "$path\\$_"}
+			else {$dp = "$path/$_"}
+			_get_current_dir($res,$details,$j,$_,$dp,$ind,@dst);
+			push @$res, "$ind</directory>";
+		    }
+		}
+	    }
+
+	    # files
+	    foreach (<*>) {
+		if (-f $_) {
+		    _get_file($res, $_, $indent, $details);
+		}
 	    }
 
 	    chdir ".."; 
@@ -319,6 +332,23 @@ push @$res, "  $indent</file>" if $details > 1;
 
 }
 
+sub _get_current_dir {
+my ($res,$details,$i,$dir,$path,$indent,@stat) = @_;    
+
+my $line = "$indent<directory name=\"$dir\"";
+$line .= " depth=\"$i\"" if $details > 1;
+$line .= " uid=\"$stat[4]\" gid=\"$stat[5]\"" if $details > 2;
+$line .= '>';
+push @$res, $line;
+push @$res, "  $indent<path>$path</path>" if $details > 1;;
+my $atime = localtime($stat[8]);
+my $mtime = localtime($stat[9]);
+push @$res, "  $indent<access-time epoch=\"$stat[8]\">$atime</access-time>" 
+  if $details > 2;
+push @$res, "  $indent<modify-time epoch=\"$stat[9]\">$mtime</modify-time>" 
+  if $details > 1;
+}
+
 1;
 
 __END__
@@ -328,7 +358,7 @@ __END__
 
 XML::Directory - Perl extension allowing to get a content of directory 
 including sub-directories as an XML file. You can generate either 
-array/string or SAX events. The current version is 0.50.
+array/string or SAX events. The current version is 0.51.
 
 =head1 SYNOPSIS
 
@@ -557,6 +587,9 @@ called.
 parse_SAX can either use handlers set by set_content_handler and 
 set_error_handler methods or set/reset one or both handlers itself. If there
 is no content handler registered in neither way, an exception is thrown.
+
+This method returns a return value of the end_document function or undef in
+tha case of error.
 
 =back
 

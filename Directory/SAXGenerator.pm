@@ -34,14 +34,30 @@ sub _get_dir_SAX {
 
     my $dir_el = _get_current_dir($h,$details,0,$last_dir,$path,@stat);
 
+    # nested dirs
+    if ($depth > 0) {
+	_recursive_SAX($h, 1, $path, $details, $depth); 
+    }
+
+    # final dirs
+    if ($depth == 0) {
+	foreach (<*>) {
+	    if (-d $_) {
+		my @dst = stat "$_";
+		my $dp;
+		if ($^O =~ /win/io) {$dp = "$path\\$_"}
+		else {$dp = "$path/$_"}
+		my $del = _get_current_dir($h,$details,1,$_,$dp,@dst);    
+		$h->end_element($del);
+	    }
+	}
+    }
+
+    # files
     foreach (<*>) {
 	if (-f $_) {
 	    _get_file_SAX($h, $_, $details);
 	}
-    }
-
-    if ($depth > 0) {
-	_recursive_SAX($h, 1, $path, $details, $depth); 
     }
 
     $h->end_element($dir_el);
@@ -70,16 +86,33 @@ sub _recursive_SAX {
 
 	    chdir $d;
 
-	    foreach (<*>) {
-		if (-f $_) {
-		    _get_file_SAX($h, $_, $details);
-		}
-	    }
-
+	    # nested dirs
 	    if ($depth > $i) {
 		$i++;
 		_recursive_SAX($h, $i, $path, $details, $depth); 
 		$i--; 
+	    }
+
+	    # final dirs
+	    unless ($depth > $i) {
+		my $j = $i + 1;
+		foreach (<*>) {
+		    if (-d $_) {
+			my @dst = stat "$_";
+			my $dp;
+			if ($^O =~ /win/io) {$dp = "$path\\$_"}
+			else {$dp = "$path/$_"}
+			my $del = _get_current_dir($h,$details,$j,$_,$dp,@dst);
+			$h->end_element($del);
+		    }
+		}
+	    }
+
+	    # files
+	    foreach (<*>) {
+		if (-f $_) {
+		    _get_file_SAX($h, $_, $details);
+		}
 	    }
 
 	    chdir ".."; 
