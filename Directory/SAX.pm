@@ -157,9 +157,9 @@ sub doEndElement {
 sub doElement {
     my ($self, $tag, $attr, $value, $qname) = @_;
     $self->doStartElement($tag, $attr, $qname);
-    $self->characters({
-	Data => $value
-    });
+ 
+    $self->characters({Data => $value }) if $value;
+
     $self->doEndElement($tag, $qname);
 }
 

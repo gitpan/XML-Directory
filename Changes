@@ -1,6 +1,13 @@
 Revision history for Perl extension XML::Directory
 ==================================================
 
+0.96  May 17, 2002
+        - Added orderby to head element
+        - updated SAX::doElement to create a singleton if
+	  necessary
+	- updated DTD to version 1.01 [Aaron Straup Cope]
+	- fixed test.pl
+
 0.95  May 2, 2002
 	- added order_by method [Aaron Straup Cope]
 	- package downgraded for Perl 5.005_03

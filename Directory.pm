@@ -14,7 +14,7 @@ require Exporter;
 @ISA = qw(Exporter);
 @EXPORT_OK = qw(get_dir);
 
-$VERSION = '0.95';
+$VERSION = '0.96';
 
 ######################################################################
 # object interface
@@ -87,6 +87,7 @@ sub parse {
 		$self->doElement('path', undef, $self->{path});
 		$self->doElement('details', undef, $self->{details});
 		$self->doElement('depth', undef, $self->{depth});
+		$self->doElement('orderby', [[code=>($self->{'__orderby'} || "df")]], undef);
 		$self->doEndElement('head');
 	    }
 	    

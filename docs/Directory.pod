@@ -605,7 +605,7 @@ This is how to extend the DTD:
 
 =head1 VERSION
 
-Current version is 0.95.
+Current version is 0.96.
 
 =head1 LICENSING
 

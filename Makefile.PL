@@ -31,7 +31,7 @@ foreach (keys %opts) {
     my $try = "require $_;";
     eval $try;
     if ($@) {
-	print "$_ is missing!\n";
+	print "\n$_ is missing!\n";
 	print "XML::Directory will be installed with the following limitation:\n";
 	print "=> $opts{$_}!\n";
 	print "Install $_ from CPAN to be able to use this functionality.\n\n";
