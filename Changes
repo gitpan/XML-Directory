@@ -1,6 +1,10 @@
 Revision history for Perl extension XML::Directory
 ==================================================
 
+0.98  Sep 24, 2002
+	- fix in regexp to get the parent directory
+          [patch by Gerhard Wannemacher]
+
 0.97  Jun 21, 2002
 	- minor fix in X:D:SAX constructor (depth => 0)
 

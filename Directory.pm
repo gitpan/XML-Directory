@@ -14,7 +14,7 @@ require Exporter;
 @ISA = qw(Exporter);
 @EXPORT_OK = qw(get_dir);
 
-$VERSION = '0.97';
+$VERSION = '0.98';
 
 ######################################################################
 # object interface
@@ -365,7 +365,7 @@ sub _directory {
 	  
 	  unless ($stop) {
 	    my $parent_dir = $self->{path} . $path;
-	    $parent_dir =~ s/[^\/\\][^\/\\]+$//;
+	    $parent_dir =~ s/[^\/\\]+$//;
 	    $parent_dir = File::Spec::Functions::canonpath($parent_dir);
 	    
 	    chdir $d or croak "Cannot chdir to $d, $!\n";
