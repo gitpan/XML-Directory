@@ -63,7 +63,7 @@ sub doStartElement {
       '  ' x $self->{level}++
 	. "<$pref" 
 	  . "$tag "
- 	    . join(' ', map {qq/$_->[0]=$_->[1]/} @$attr)
+ 	    . join(' ', map {qq/$_->[0]="$_->[1]"/} @$attr)
  	      . ">";
 }
 
@@ -85,7 +85,7 @@ sub doElement {
     my $element = '  ' x $self->{level} 
       . "<$pref"  
       . "$tag "
-      . join(' ', map {qq/$_->[0]=$_->[1]/} @$attr) 
+      . join(' ', map {qq/$_->[0]="$_->[1]"/} @$attr)
       . '>';
     $element =~ s/ >$/>/;
     $element .= $value if $value;

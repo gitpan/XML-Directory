@@ -1,6 +1,9 @@
 Revision history for Perl extension XML::Directory
 ==================================================
 
+0.94  Apr 3, 2002
+	- added missing quotes in String.pm
+
 0.93  Mar 28, 2002
 	- added parameter entities based DTD
 	  [provided by Aaron Straup Cope]
