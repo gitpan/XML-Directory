@@ -10,7 +10,7 @@ require Exporter;
 our @ISA = qw(Exporter);
 
 our @EXPORT_OK = qw(get_dir);
-our $VERSION = '0.84';
+our $VERSION = '0.85';
 
 
 ######################################################################
@@ -202,15 +202,34 @@ sub _directory {
     my $doc_prefix = 'doc'; # default prefix
     my $rdf;                # rdf object
     my $stop = 0;           # end of recursion controlled by meta-data
-    if ($self->{rdf_enabled} && -f $self->{n3_index}) {
-	require RDF::Notation3::PrefTriples;
-	$rdf = new RDF::Notation3::PrefTriples;
-	eval {$rdf->parse_file($self->{n3_index})};
-	if ($@) {
-	    $self->doError(6,"[RDF/N3 error ($dirname)] $@");
-	    return -1;
-	} else {
-	    $rdf_data = 1;
+
+    if ($self->{rdf_enabled}) {
+
+	if (-f $self->{n3_index}) {
+	    require RDF::Notation3::PrefTriples;
+	    $rdf = new RDF::Notation3::PrefTriples;
+	    eval {$rdf->parse_file($self->{n3_index})};
+	    if ($@) {
+		$self->doError(6,"[RDF/N3 error ($dirname)] $@");
+		return -1;
+	    } else {
+		$rdf_data = 1;
+	    }
+	}
+	# parent N3 is read for uppermost directories only
+	if (not $rdf_data_P) {
+	    my $p_n3 = File::Spec::Functions::canonpath("../$self->{n3_index}");
+	    if (-f $p_n3) {
+		require RDF::Notation3::PrefTriples;
+		$rdf_P = new RDF::Notation3::PrefTriples;
+		eval {$rdf_P->parse_file($p_n3)};
+		if ($@) {
+		    $self->doError(6,"[RDF/N3 error ($dirname/..)] $@");
+		    return -1;
+		} else {
+		    $rdf_data_P = 1;
+		}
+	    }
 	}
     }
 
@@ -245,7 +264,7 @@ sub _directory {
     $self->doElement('modify-time', [[epoch => $stat[9]]], $mtime) 
       if $self->{details} > 1;
 
-    # rdf metadata for nested dirs
+    # rdf metadata for nested or uppermost dirs dirs
     if ($self->{details} > 1) {
 	if ($rdf_data_P) {
 	    my $position_set = 0;
@@ -262,7 +281,7 @@ sub _directory {
 	    my $triples = $rdf_P->get_triples("<$dirname>");
 	    foreach (@$triples) {
 		$_->[2] =~ s/^"(.*)"$/$1/;
-		$self->doElement($_->[1],undef,$_->[2],1);
+		$self->doElement($_->[1],undef,_esc($_->[2]),1);
 
 		# looking for doc:Type = 'document'
 		$_->[1] =~ s/^([_a-zA-Z]\w*)*:/$rdf_P->{ns}->{'<>'}->{$1}/;
@@ -329,7 +348,7 @@ sub _directory {
 		    my $triples = $rdf->get_triples("<$d>");
 		    foreach (@$triples) {
 			$_->[2] =~ s/^"(.*)"$/$1/;
-			$self->doElement($_->[1],undef,$_->[2],1);
+			$self->doElement($_->[1],undef,_esc($_->[2]),1);
 		    }
 		}
 		$self->doEndElement('directory');
@@ -353,11 +372,9 @@ sub _file($$$$) {
     my ($self, $name, $level, $rdf_data, $rdf, $doc_prefix) = @_;
 
     my @stat = stat $name;
-    my $esc_name = $name;
-    $esc_name =~ s/&/&amp;/;
 
     my @attr = ();
-    push @attr, [name => $esc_name];
+    push @attr, [name => _esc($name)];
     push @attr, [uid => $stat[4]] if $self->{details} > 2;
     push @attr, [gid => $stat[5]] if $self->{details} > 2;
 
@@ -398,7 +415,7 @@ sub _file($$$$) {
 	    my $triples = $rdf->get_triples("<$name>");
 	    foreach (@$triples) {
 		$_->[2] =~ s/^"(.*)"$/$1/;
-		$self->doElement($_->[1],undef,$_->[2],1);
+		$self->doElement($_->[1],undef,_esc($_->[2]),1);
 	    }
 	}
 
@@ -418,6 +435,15 @@ sub _ns_declaration {
 	}
     }
     return $decl;
+}
+
+sub _esc {
+    my $str = shift;
+
+    $str =~ s/&/&amp;/g;
+    $str =~ s/</&lt;/g;
+    $str =~ s/>/&gt;/g;
+    return $str;
 }
 
 1;

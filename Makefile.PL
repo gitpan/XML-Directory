@@ -2,8 +2,6 @@ use ExtUtils::MakeMaker;
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
 # the contents of the Makefile that is written.
 
-$VERSION = '0.80';
-
 # mandatory stuff
 my $ok = 1;
 my @deps = ('File::Spec',
@@ -33,7 +31,10 @@ foreach (keys %opts) {
     if ($@) {
 	print "$_ is missing!\n";
 	print "XML::Directory will be installed with the following limitation:\n";
-	print "=> $opts{$_}!\n\n";
+	print "=> $opts{$_}!\n";
+	print "Install $_ from CPAN to be able to use this functionality.\n\n";
+    } else {
+	print "$_ found...\n";
     }
 }
 

@@ -77,7 +77,7 @@ sub doElement {
       . "$tag "
       . join(' ', map {qq/$_->[0]="$_->[1]"/} @$attr) 
       . '>';
-    $element =~ s/ >/>/;
+    $element =~ s/ >$/>/;
     $element .= $value if $value;
     $element .= "</$pref";
     $element .= "$tag>";
