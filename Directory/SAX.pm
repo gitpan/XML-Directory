@@ -5,69 +5,126 @@ package XML::Directory::SAX;
 
 require 5.005_62;
 use Carp;
+use Cwd;
 use XML::Directory;
-use XML::Directory::Exception;
+use XML::SAX::Base;
 
-@XML::Directory::SAX::ISA = qw(XML::Directory);
+@XML::Directory::SAX::ISA = qw(XML::SAX::Base XML::Directory);
+
+sub new {
+    my $proto = shift;
+    my $class = ref($proto) || $proto;
+    my $options = ($#_ == 0) ? shift : { @_ };
+
+    $options->{path} = cwd   unless $options->{path};
+    $options->{details} = 2  unless $options->{details};
+    $options->{depth} = 1000 unless $options->{depth};
+
+    $options->{path} = File::Spec::Functions::canonpath($options->{path});
+    $options->{error} = 0;
+    $options->{catch_error} = 0;
+    $options->{ns_enabled} = 0;
+    $options->{rdf_enabled} = 0;
+    $options->{n3_index} = '';
+    $options->{ns_uri} = 'http://gingerall.org/directory/1.0/';
+    $options->{ns_prefix} = 'xd';
+    $options->{encoding} = 'utf-8';
+
+    my $self = bless $options, $class;
+    # turn NS processing on by default
+    $self->set_feature('http://xml.org/sax/features/namespaces', 1);
+    return $self;
+}
+
+# --------------------------------------------------
+# XML::SAX compliant methods
+
+sub parse_dir {
+    my $self = shift;
+    my $dir = shift;
+    $dir = $self->{path} unless $dir;
+    my $parse_options = $self->get_options(@_);
+    $parse_options->{Source}{ByteStream} = $dir;
+    $self->{path} = $dir;
+    if ($parse_options->{Handler} or $parse_options->{ContentHandler} 
+	or $parse_options->{DocumentHandler}) {
+	return $self->XML::SAX::Base::parse($parse_options);
+    } else {
+	$self->doError(8,'');
+	return -1;
+    }
+
+}
+
+sub _parse_bytestream {
+    my ($self) = @_;
+
+     $self->XML::Directory::parse;
+     return $self->{ret};
+}
+
+sub _parse_systemid {
+    my $self = shift;
+    $self->doError(4,'SystemId');
+}
+
+sub _parse_string {
+    my $self = shift;
+    $self->doError(4,'String');
+}
+
+sub _parse_characterstream {
+    my $self = shift;
+    $self->doError(4,'CharacterStream');
+}
+
+# --------------------------------------------------
+# old parse() method for backward compatibility
 
 sub parse {
     my $self = shift;
-
-    unless (ref($self->{ContentHandler})) {
-	$self->doError(4,"ContentHandler is not set!")
-    }
-    
-    $self->SUPER::parse;
-    return $self->{ret};
+    return $self->parse_dir(@_);
 }
 
-sub set_content_handler {
-    my ($self, $handler) = @_;
-    $handler = '' unless @_ > 1;
-    $self->{ContentHandler} = $handler;
-}
-
-sub set_error_handler {
-    my ($self, $err_handler) = @_;
-    $err_handler = '' unless @_ > 1;
-    $self->{ErrorHandler} = $err_handler;
-}
+# --------------------------------------------------
+# private methods
 
 sub doStartDocument {
     my $self = shift;
-    $self->{ContentHandler}->start_document;
+    $self->start_document;
 }
 
 sub doEndDocument {
     my $self = shift;
-    $self->{ret} = $self->{ContentHandler}->end_document;
+    $self->{ret} = $self->end_document;
 }
 
 sub doStartElement {
     my ($self, $tag, $attr, $qname) = @_;
-    my $SAXattr = {};
+
+    my %attributes;
     foreach (@$attr) {
-	my $attkey = "{}$_->[0]";
-	$SAXattr->{$attkey} = XML::Directory::Attribute->new (
-	    Name => $_->[0],
-	    Value => $_->[1],
-	    NamespaceURI => '',
+	$attributes{"{}$_->[0]"} = {
+            Name => $_->[0],
+	    LocalName => $_->[0],
 	    Prefix => '',
-	    LocalName => $_->[0]
-	)
-    };
+	    NamespaceURI => '',
+	    Value => $_->[1],
+	}
+    }
+
     my $uri = $self->_ns_uri;
     my $prefix = '';
     $prefix = $self->_ns_prefix unless $qname;
     my $name = $tag;
     $name = "$prefix:$tag" if $prefix;
 
-    $self->{ContentHandler}->start_element({
+    $self->start_element({
 	Name => $name,
-	Attributes => $SAXattr,
-	NamespaceURI => $uri,
+	LocalName => $tag,
 	Prefix => $prefix,
-	LocalName => $tag
+	NamespaceURI => $uri,
+	Attributes => \%attributes,
     });
 };
 
@@ -79,27 +136,29 @@ sub doEndElement {
     my $name = $tag;
     $name = "$prefix:$tag" if $prefix;
 
-    $self->{ContentHandler}->end_element({
+    $self->end_element({
 	Name => $name,
-	NamespaceURI => $uri,
+	LocalName => $tag,
 	Prefix => $prefix,
-	LocalName => $tag
+	NamespaceURI => $uri,
     });
 }
 
 sub doElement {
     my ($self, $tag, $attr, $value, $qname) = @_;
     $self->doStartElement($tag, $attr, $qname);
-    $self->{ContentHandler}->characters({
+    $self->characters({
 	Data => $value
     });
     $self->doEndElement($tag, $qname);
 }
 
 sub doError {
-    my ($self, $n, $msg) = @_;
+    my ($self, $n, $par) = @_;
+    my $msg = $self->_msg($n);
+    $msg = "[Error $n] $msg: $par";
 
-    unless ($self->{catch_error}) {
+    unless ($self->{catch_error} && $self->{ErrorHandler}) {
 	croak "$msg\n"
 
     } else {
@@ -107,15 +166,9 @@ sub doError {
 	$msg =~ s/&/&amp;/g;
 	$msg =~ s/</&lt;/g;
 	$msg =~ s/>/&gt;/g;
-	my $exception = new XML::Directory::Exception (
-		Message => $msg,
-		Exception => undef);
-	$self->{error} = $n;
 
-	$@ = $exception;
-	if (ref($self->{ErrorHandler})) {
-	    $self->{ErrorHandler}->fatal_error($exception);
-	}
+	$self->{error} = $n;
+	$self->SUPER::fatal_error({Message => $msg});
     }
 }
 
@@ -137,22 +190,6 @@ sub _ns_uri {
 	$uri = "$self->{ns_uri}";
     }
     return $uri;
-}
-
-###########################################################
-package XML::Directory::Attribute;
-
-use overload '""' => "stringify";
-
-sub new {
-    my $class = shift;
-    my %p = @_;
-    return bless \%p, $class;
-}
-
-sub stringify {
-    my $self = shift;
-    return $self->{Value};
 }
 
 1;

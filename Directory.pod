@@ -7,18 +7,19 @@ XML::Directory - returns a content of directory as XML.
 =head1 SYNOPSIS
 
  use XML::Directory::String;
- $dir = new XML::Directory::String('/home/petr',3,10);
- $rc = $dir->parse;
+ $dir = XML::Directory::String->new('/home/petr',3,10);
+ $rc = $dir->parse_dir;
  @res = $dir->get_array;
 
 or
 
  use XML::Directory::SAX;
  use MyHandler;
- $dir = new XML::Directory::SAX('/home/petr',3,10);
- $h = new MyHandler;
- $dir->set_content_handler($h);
- $rc = $dir->parse;
+ $h = MyHandler->new();
+ $e = MyErrorHandler->new();
+ $dir = XML::Directory::SAX->new( Handler => $h, ErrorHandler => $e,
+                                  details => 3, depth => 10);
+ $rc = $dir->parse_dir('/home/petr');
 
 =head1 DESCRIPTION
 
@@ -27,8 +28,8 @@ XML::Directory::SAX. Their methods make it possible to set parameters
 such as level of details or maximal number of nested sub-directories
 and generate either string containing the resulting XML or SAX events.
 
-The SAX generator supports both SAX1 and SAX2 handlers. There are two
-SAX interfaces available: basic ContentHandler and optional ErrorHandler.
+The SAX generator is based on XML::SAX::Base; it's supposed to cooperate
+with other XML::SAX compliant modules safely.
 
 The original function (get_dir) is still supported via XML::Directory
 base class.
@@ -43,21 +44,11 @@ base class.
 
 =over
 
-=item new
-
- $dir = new XML::Directory('/home/petr',2,5);
- $dir = new XML::Directory('/home/petr',2);
- $dir = new XML::Directory('/home/petr');
-
-The constructor accepts up to 3 parameters: path, details (1-3, brief or 
-verbose XML) and depth (number of nested sub-directories). The last two 
-parameters are optional (defaulted to 2 and 1000).
-
 =item set_path
 
  $dir->set_path('/home/petr');
 
-Resets path. An initial path is set using the constructor.
+Resets path. An initial path can be set using the constructor.
 
 =item set_details
 
@@ -131,20 +122,23 @@ Sets or resets number of nested sub-directories to be parsed. Can also be
 set using the constructor. 0 means that only a directory specified by path 
 is parsed (no sub-directories).
 
-=item parse
+=item parse_dir, parse
 
+ $rc  = $dir->parse_dir;
  $rc  = $dir->parse;
 
-Scans directory tree specified by path. When used from the
+Both methods are equivalent, the later is supported for the sake of backward
+compatibility. It scans directory tree specified by path. When used from the
 XML::Directory::String class instance it stores its XML representation 
 in memory ($dir->{xml}) and returns a number of lines. For 
 XML::Directory::SAX it generate SAX events and returns a result of
-the end_document function.
+the end_document function. Parse methods of the SAX generator also accept
+parameters: paths and options.
 
 This method checks a validity of details and depth. In the event a parameter
 is out of valid range, an error occurs. The same is true if the path 
-specified can't be found. For SAX, missing content handler is also treated 
-as error.
+specified can't be found. For the SAX generator, missing content handler is 
+also treated as error.
 
 =item get_path
 
@@ -222,7 +216,10 @@ In addition, one more element doc:Position (where doc prefix is bound to
 URI namespace of http://gingerall.org/charlie-doc/1.0/) is added. This element
 contains a position of the first triple with the current document as subject 
 within the triple array, so that the order of files/directories can be 
-controlled using the RDF/N3 file.
+controlled using the RDF/N3 file. The doc:Position element is generated even
+when a document is not found in the N3 file or the N3 is not found in a 
+directory; it is generated as a unique identifier handy e.g. for sorting in 
+this event. Use $dir->disable_rdf to disable his feature.
 
 If there is a property called doc:Type with value of 'document' found for 
 a directory, sub-directories and files are not processed. This is a way to
@@ -276,15 +273,16 @@ values:
 
 =item die 
 
-The parse method dies (actually croaks) on an error. Default value.
+The parse_dir method dies (actually croaks) on an error. Default value.
 
 =item warn
 
-The parse methods catches the error. String generator returns an XML error
+The parse_dir methods catches the error. String generator returns an XML error
 message. SAX driver throws a SAX exception and calls an error handler if
-defined. String $dir->{error} property is set to an error number.
+defined (otherwise it dies as for "die"). String $dir->{error} property is 
+set to an error number.
 
- Example of an error message:
+Example of an error message:
 
  <?xml version="1.0" encoding="utf-8"?>
  <dirtree xmlns="http://gingerall.org/directory/1.0/">
@@ -298,6 +296,16 @@ defined. String $dir->{error} property is set to an error number.
 =head2 XML::DIRECTORY::STRING
 
 =over
+
+=item new
+
+ $dir = XML::Directory->new('/home/petr',2,5);
+ $dir = XML::Directory->new('/home/petr',2);
+ $dir = XML::Directory->new('/home/petr');
+
+The constructor accepts up to 3 parameters: path, details (1-3, brief or 
+verbose XML) and depth (number of nested sub-directories). The last two 
+parameters are optional (defaulted to 2 and 1000).
 
 =item get_arrayref
 
@@ -325,6 +333,30 @@ Returns a parsed XML directory image as a string.
 
 =over
 
+=item new
+
+ $dir = XML::Directory::SAX->new( Handler => $h, ErrorHandler => $e,
+                                  details => 3, depth => 10);
+
+The constructor accepts an option hash as its only parameter. The hash keys
+may include all options recognized by XML::SAX::Base (e.g. Handler, 
+ErrorHandler, Source) and three options specific to XML::Directory::SAX 
+(details, depth, path).
+
+The only mandatory option is Handler, other options either have their default 
+values (details=2, depth=1000, path=<current working directory>) or aren't
+required.
+
+=item other methods
+
+Other methods include these inherited from XML::Directory (see
+METHODS COMMON TO BOTH CLASSES) and those inherited from XML::SAX::Base.
+
+Among them the following could be useful to change handlers during the parse
+time safely:
+
+=over
+
 =item set_content_handler
 
  $h = new MyHandler;
@@ -338,6 +370,10 @@ Sets SAX content handler.
  $dir->set_error_handler($e);
 
 Sets SAX error handler.
+
+=back
+
+See XML::SAX::Base documentation for more details.
 
 =back
 
@@ -407,21 +443,25 @@ be send in query.
 
 =head1 VERSION
 
-Current version is 0.85.
+Current version is 0.90.
 
 =head1 LICENSING
 
-Copyright (c) 2001 Ginger Alliance. All rights reserved. This program is free 
-software; you can redistribute it and/or modify it under the same terms as 
-Perl itself. 
+Copyright (c) 2001-2002 Ginger Alliance. All rights reserved. This program 
+is free software; you can redistribute it and/or modify it under the same 
+terms as Perl itself. 
 
 =head1 AUTHOR
 
-Petr Cimprich, petr@gingerall.cz,
-Duncan Cameron, dcameron@bcs.org.uk
+Petr Cimprich, petr@gingerall.cz
+
+=head1 CONTRIBUTORS
+
+Duncan Cameron, dcameron@bcs.org.uk,
+Chris Snyder, csnyder@longitude.com
 
 =head1 SEE ALSO
 
-perl(1).
+perl(1), XML::SAX, RDF::Notation3.
 
 =cut

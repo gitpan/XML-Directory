@@ -5,12 +5,13 @@ use strict;
 use warnings;
 use File::Spec::Functions ();
 use Carp;
+use Cwd;
 
 require Exporter;
 our @ISA = qw(Exporter);
 
 our @EXPORT_OK = qw(get_dir);
-our $VERSION = '0.85';
+our $VERSION = '0.90';
 
 
 ######################################################################
@@ -18,7 +19,7 @@ our $VERSION = '0.85';
 
 sub new {
     my ($class, $path, $details, $depth) = @_;
-    $path = '.'   unless @_ > 1;
+    $path = cwd   unless @_ > 1;
     $details = 2  unless @_ > 2;
     $depth = 1000 unless @_ > 3;
 
@@ -43,12 +44,15 @@ sub parse {
     my $self = shift;
 
     if ($self->{details} !~ /^[123]$/) {
-	$self->doError(1,"Details value ($self->{details}) invalid!")
+	$self->doError(1,$self->{details})
     }
     if ($self->{depth} !~ /^\d+$/) {
-	$self->doError(2,"Depth value ($self->{depth}) invalid!")
+	$self->doError(2,$self->{depth})
     }
     if ($self->{error} == 0) {
+
+	$self->{seq} = 1; # a sequence used for doc:Position
+
 	eval {
 
 	    chdir ($self->{path}) or die "Path $self->{path} not found!\n";
@@ -88,14 +92,14 @@ sub parse {
 	};
 	  if ($@) {
 	      chomp $@;
-	      $self->doError(3,"$@");
+	      $self->doError(3,$@);
 	  }
     }
 }
 
 sub set_path {
     my ($self, $path) = @_;
-    $path = '.' unless @_ > 1;
+    $path = cwd unless @_ > 1;
     $self->{path} = File::Spec::Functions::canonpath($path),;
 }
 
@@ -172,7 +176,7 @@ sub enable_rdf {
     $self->{n3_index} = $index;
     eval { require RDF::Notation3; };
     chomp $@;
-    $self->doError(5,"$@") if $@;
+    $self->doError(5,$@) if $@;
 }
 
 sub disable_rdf {
@@ -207,10 +211,10 @@ sub _directory {
 
 	if (-f $self->{n3_index}) {
 	    require RDF::Notation3::PrefTriples;
-	    $rdf = new RDF::Notation3::PrefTriples;
+	    $rdf = RDF::Notation3::PrefTriples->new();
 	    eval {$rdf->parse_file($self->{n3_index})};
 	    if ($@) {
-		$self->doError(6,"[RDF/N3 error ($dirname)] $@");
+		$self->doError(6,"$dirname, $@");
 		return -1;
 	    } else {
 		$rdf_data = 1;
@@ -218,13 +222,17 @@ sub _directory {
 	}
 	# parent N3 is read for uppermost directories only
 	if (not $rdf_data_P) {
-	    my $p_n3 = File::Spec::Functions::canonpath("../$self->{n3_index}");
+	    # link-safe way to get a parent dir
+	    my $p_n3 = $self->{path} . $path;
+	    $p_n3 =~ s/[^\/\\]+$/$self->{n3_index}/;
+	    $p_n3 = File::Spec::Functions::canonpath($p_n3);
+
 	    if (-f $p_n3) {
 		require RDF::Notation3::PrefTriples;
-		$rdf_P = new RDF::Notation3::PrefTriples;
+		$rdf_P = RDF::Notation3::PrefTriples->new();
 		eval {$rdf_P->parse_file($p_n3)};
 		if ($@) {
-		    $self->doError(6,"[RDF/N3 error ($dirname/..)] $@");
+		    $self->doError(6,"$dirname, $@");
 		    return -1;
 		} else {
 		    $rdf_data_P = 1;
@@ -252,6 +260,29 @@ sub _directory {
 	      ["xmlns:$_" => $rdf->{ns}->{$rdf->{context}}->{$_}];
 	} 
     }
+    if ($rdf_data_P) {
+	foreach (keys %{$rdf_P->{ns}->{$rdf_P->{context}}}) {
+
+	    unless ($rdf_data and $rdf->{ns}->{$rdf->{context}}->{$_} and 
+		    $rdf->{ns}->{$rdf->{context}}->{$_} eq 
+		    $rdf_P->{ns}->{$rdf_P->{context}}->{$_}) {
+
+		# the same prefix bound to different NS in $rdf and $rdf_P
+		# launches an error to prevent not well-formed XML
+		if ($rdf_data and $rdf->{ns}->{$rdf->{context}}->{$_} and 
+		    $rdf->{ns}->{$rdf->{context}}->{$_} ne 
+		    $rdf_P->{ns}->{$rdf_P->{context}}->{$_}) {
+		    my $msg = "$_ -> $rdf->{ns}->{$rdf->{context}}->{$_}, "
+		      . "$rdf_P->{ns}->{$rdf_P->{context}}->{$_} in "
+			. $self->{path} . $path . ' and its parent';
+		    $self->doError(7,$msg);
+		}
+		
+		push @attr, 
+		  ["xmlns:$_" => $rdf_P->{ns}->{$rdf_P->{context}}->{$_}];
+	    }
+	} 
+    }
 
     $self->doStartElement('directory', \@attr);
 
@@ -266,9 +297,10 @@ sub _directory {
 
     # rdf metadata for nested or uppermost dirs dirs
     if ($self->{details} > 1) {
+	my $position_set = 0;
+	my $cnt = 0;
 	if ($rdf_data_P) {
-	    my $position_set = 0;
-	    my $cnt = scalar @{$rdf_P->{triples}};
+	    $cnt = scalar @{$rdf_P->{triples}};
 	    for (my $i = 0; $i < $cnt; $i++) {
 		if ($rdf_P->{triples}->[$i]->[0] eq "<$dirname>") {
 		    $self->doElement("$doc_prefix:Position",undef,$i+1,1);
@@ -276,8 +308,6 @@ sub _directory {
 		    last;
 		}
 	    }
-	    $self->doElement("$doc_prefix:Position",undef,$cnt+1,1)
-	      unless $position_set;
 	    my $triples = $rdf_P->get_triples("<$dirname>");
 	    foreach (@$triples) {
 		$_->[2] =~ s/^"(.*)"$/$1/;
@@ -290,6 +320,9 @@ sub _directory {
 		    and $_->[2] eq 'document';
 	    }
 	}
+	if ($self->{rdf_enabled} and not($position_set)) {
+	    $self->_doUnknownPosition($cnt, $doc_prefix); 
+	}
     }
 
     # nested dirs
@@ -299,9 +332,13 @@ sub _directory {
 	    my $path = File::Spec::Functions::catfile($path, $d);
 
 	    unless ($stop) {
+ 		my $parent_dir = $self->{path} . $path;
+ 		$parent_dir =~ s/[^\/\\][^\/\\]+$//;
+ 		$parent_dir = File::Spec::Functions::canonpath($parent_dir);
+
 		chdir $d or croak "Cannot chdir to $d, $!\n";
 		$self->_directory($path, $d, $level, $rdf_data, $rdf);
-		chdir '..'; 
+		chdir $parent_dir; 
 	    }
 	}
 	$level--;
@@ -333,9 +370,10 @@ sub _directory {
 		$self->doElement('modify-time', [[epoch => $stat[9]]], $mtime);
 
 		# rdf metadata
+		my $position_set = 0;
+		my $cnt = 0;
 		if ($rdf_data) {
-		    my $position_set = 0;
-		    my $cnt = scalar @{$rdf->{triples}};
+		    $cnt = scalar @{$rdf->{triples}};
 		    for (my $i = 0; $i < $cnt; $i++) {
 			if ($rdf->{triples}->[$i]->[0] eq "<$d>") {
 			    $self->doElement("$doc_prefix:Position",undef,$i+1,1);
@@ -343,13 +381,14 @@ sub _directory {
 			    last;
 			}
 		    }
-		    $self->doElement("$doc_prefix:Position",undef,$cnt+1,1)
-		      unless $position_set;
 		    my $triples = $rdf->get_triples("<$d>");
 		    foreach (@$triples) {
 			$_->[2] =~ s/^"(.*)"$/$1/;
 			$self->doElement($_->[1],undef,_esc($_->[2]),1);
 		    }
+		}
+		if ($self->{rdf_enabled} and not($position_set)) {
+		    $self->_doUnknownPosition($cnt, $doc_prefix);
 		}
 		$self->doEndElement('directory');
 	    }
@@ -400,9 +439,10 @@ sub _file($$$$) {
 	    if $self->{details} > 1;
 
 	# rdf metadata
+	my $position_set = 0;
+	my $cnt = 0;
 	if ($rdf_data) {
-	    my $position_set = 0;
-	    my $cnt = scalar @{$rdf->{triples}};
+	    $cnt = scalar @{$rdf->{triples}};
 	    for (my $i = 0; $i < $cnt; $i++) {
 		if ($rdf->{triples}->[$i]->[0] eq "<$name>") {
 		    $self->doElement("$doc_prefix:Position",undef,$i+1,1);
@@ -410,15 +450,15 @@ sub _file($$$$) {
 		    last;
 		}
 	    }
-	    $self->doElement("$doc_prefix:Position",undef,$cnt+2,1)
-	      unless $position_set;
 	    my $triples = $rdf->get_triples("<$name>");
 	    foreach (@$triples) {
 		$_->[2] =~ s/^"(.*)"$/$1/;
 		$self->doElement($_->[1],undef,_esc($_->[2]),1);
 	    }
 	}
-
+	if ($self->{rdf_enabled} and not($position_set)) {
+	    $self->_doUnknownPosition($cnt, $doc_prefix);
+	}
 	$self->doEndElement('file');
     }
 }
@@ -437,6 +477,13 @@ sub _ns_declaration {
     return $decl;
 }
 
+sub _doUnknownPosition {
+    my ($self, $cnt, $prefix) = @_;
+    
+    $self->doElement("$prefix:Position", undef, $cnt + $self->{seq}, 1);
+    $self->{seq}++;
+}
+
 sub _esc {
     my $str = shift;
 
@@ -444,6 +491,23 @@ sub _esc {
     $str =~ s/</&lt;/g;
     $str =~ s/>/&gt;/g;
     return $str;
+}
+
+sub _msg {
+    my ($self, $no) = @_;
+
+    my %msg = (
+	1   => 'details value invalid',
+	2   => 'depth value invalid',
+	3   => 'parse error',
+	4   => 'input source not supported',
+	5   => 'required module not found',
+	6   => 'RDF data parse error', 
+	7   => 'prefix bound to 2 namespaces',
+	8   => 'content handler not found',
+	);
+
+    return $msg{$no};
 }
 
 1;
@@ -471,3 +535,4 @@ Duncan Cameron, dcameron@bcs.org.uk
 perl(1).
 
 =cut
+

@@ -9,17 +9,16 @@ use strict;
 
 my $path = shift;
 
-my $dir = new XML::Directory::SAX($path);
+my $h = MyHandler->new();
+my $e = MyErrorHandler->new();
 
-$dir->set_maxdepth(10);
-$dir->set_details(3);
+my $dir = XML::Directory::SAX->new(
+				  Handler => $h, 
+				  ErrorHandler => $e,
+				  details => 3,
+				  depth => 10,
+				 );
 
-my $h = new MyHandler;
-my $e = new MyErrorHandler;
-
-$dir->set_content_handler($h);
-$dir->set_error_handler($e);
-
-my $rc  = $dir->parse;
+my $rc  = $dir->parse_dir($path);
 
 exit 0;

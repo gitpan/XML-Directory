@@ -6,6 +6,7 @@ use ExtUtils::MakeMaker;
 my $ok = 1;
 my @deps = ('File::Spec',
 	    'Carp',
+	    'Cwd',
 	   );
 
 foreach (@deps) {
@@ -23,6 +24,7 @@ exit unless $ok;
 # optional stuff
 my %opts = (Apache => 'mod_perl interface can not be used',
 	    RDF::Notation3 => 'support of RDF/N3 metadata can not be used',
+	    XML::SAX => "XML::Directory::SAX class can't be used",
 	   );
 
 foreach (keys %opts) {
@@ -41,6 +43,6 @@ foreach (keys %opts) {
 WriteMakefile(
     'NAME'		=> 'XML::Directory',
     'VERSION_FROM'	=> 'Directory.pm',
-    'PREREQ_PM'		=> {},#{mod_perl => 1.0}
+    'PREREQ_PM'		=> {}, #{mod_perl => 1.0}
     dist	        => {COMPRESS => 'gzip', SUFFIX => 'tar.gz'},
 );

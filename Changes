@@ -1,6 +1,11 @@
 Revision history for Perl extension XML::Directory
 ==================================================
 
+0.90  Feb 4, 2002
+	- support for symbolic links [suggested by Chris Snyder]
+	- fixes for RDF meta-data stuff (namespaces, position)
+	- SAX driver makes use of XML::SAX::Base
+
 0.85  Jan 17, 2002
 	- XML error messages are escaped to be well-formed
 	- RDF meta-data are escaped to be well-formed

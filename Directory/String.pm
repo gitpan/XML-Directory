@@ -10,6 +10,12 @@ use XML::Directory;
 
 @XML::Directory::String::ISA = qw(XML::Directory);
 
+sub parse_dir {
+    my $self = shift;
+    $self->SUPER::parse;
+    return scalar @{$self->{xml}};
+}
+
 sub parse {
     my $self = shift;
     $self->SUPER::parse;
@@ -85,7 +91,9 @@ sub doElement {
 }
 
 sub doError {
-    my ($self, $n, $msg) = @_;
+    my ($self, $n, $par) = @_;
+    my $msg = $self->_msg($n);
+    $msg = "[Error $n] $msg: $par";
 
     unless ($self->{catch_error}) {
 	croak "$msg\n"

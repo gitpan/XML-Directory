@@ -6,7 +6,6 @@ Directory.pm
 Directory.pod
 Directory/String.pm
 Directory/SAX.pm
-Directory/Exception.pm
 Directory/Apache.pm
 test.pl
 examples/dir2xml.pl
