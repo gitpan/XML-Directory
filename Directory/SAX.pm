@@ -1,9 +1,9 @@
-use strict;
-use warnings;
-
 package XML::Directory::SAX;
 
-require 5.005_62;
+require 5.005_03;
+BEGIN { require warnings if $] >= 5.006; }
+
+use strict;
 use Carp;
 use Cwd;
 use XML::Directory;

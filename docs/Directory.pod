@@ -160,6 +160,28 @@ Returns current level of details.
 
 Returns current number of nested sub-directories.
 
+=item pkg->order_by
+
+ $dir->order_by($code)
+
+Sort contents of a directory based. Valid options for I<$code> are :
+
+=over
+
+=item df
+
+directory, file I<default>
+
+=item fd
+
+file, directory
+
+=item a
+
+alphabetical
+
+=back
+
 =item enable_ns;
 
  $dir->enable_ns; 
@@ -583,7 +605,7 @@ This is how to extend the DTD:
 
 =head1 VERSION
 
-Current version is 0.94.
+Current version is 0.95.
 
 =head1 LICENSING
 

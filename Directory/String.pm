@@ -1,9 +1,9 @@
-use strict;
-use warnings;
-
 package XML::Directory::String;
 
-require 5.005_62;
+require 5.005_03;
+BEGIN { require warnings if $] >= 5.006; }
+
+use strict;
 use File::Spec::Functions ();
 use Carp;
 use XML::Directory;
@@ -88,7 +88,7 @@ sub doElement {
       . join(' ', map {qq/$_->[0]="$_->[1]"/} @$attr)
       . '>';
     $element =~ s/ >$/>/;
-    $element .= $value if $value;
+    $element .= $value if defined $value;
     $element .= "</$pref";
     $element .= "$tag>";
     push @{$self->{xml}}, $element;

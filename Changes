@@ -1,6 +1,11 @@
 Revision history for Perl extension XML::Directory
 ==================================================
 
+0.95  May 2, 2002
+	- added order_by method [Aaron Straup Cope]
+	- package downgraded for Perl 5.005_03
+	- repeated attempts to open N3 files
+
 0.94  Apr 3, 2002
 	- added missing quotes in String.pm
 

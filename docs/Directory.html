@@ -179,6 +179,24 @@ also treated as error.</P>
 <PRE>
  $maxdepth = $dir-&gt;get_maxdepth;</PRE>
 <P>Returns current number of nested sub-directories.</P>
+<DT><STRONG><A NAME="item_order_by">$pkg-&gt;order_by</A></STRONG><BR>
+<DD>
+<PRE>
+ $dir-&gt;order_by($code)</PRE>
+<P>Sort contents of a directory based. Valid options for <EM>$code</EM> are :</P>
+<DL>
+<DT><STRONG><A NAME="item_df">df</A></STRONG><BR>
+<DD>
+directory, file <EM>default</EM>
+<P></P>
+<DT><STRONG><A NAME="item_fd">fd</A></STRONG><BR>
+<DD>
+file, directory
+<P></P>
+<DT><STRONG><A NAME="item_a">a</A></STRONG><BR>
+<DD>
+alphabetical
+<P></P></DL>
 <DT><STRONG><A NAME="item_enable_ns%3B">enable_ns;</A></STRONG><BR>
 <DD>
 <PRE>
@@ -527,7 +545,7 @@ or XSLT.</P>
 <P>
 <HR>
 <H1><A NAME="version">VERSION</A></H1>
-<P>Current version is 0.93.</P>
+<P>Current version is 0.94.</P>
 <P>
 <HR>
 <H1><A NAME="licensing">LICENSING</A></H1>

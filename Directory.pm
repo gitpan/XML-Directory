@@ -1,9 +1,12 @@
 package XML::Directory;
 
-require 5.005_62;
+require 5.005_03;
+BEGIN { require warnings if $] >= 5.006; }
+
 use strict;
 use vars qw(@ISA @EXPORT_OK $VERSION);
 use File::Spec::Functions ();
+use DirHandle;
 use Carp;
 use Cwd;
 
@@ -11,7 +14,7 @@ require Exporter;
 @ISA = qw(Exporter);
 @EXPORT_OK = qw(get_dir);
 
-$VERSION = '0.94';
+$VERSION = '0.95';
 
 ######################################################################
 # object interface
@@ -197,6 +200,17 @@ sub disable_rdf {
     $self->{rdf_enabled} = 0;
 }
 
+sub order_by {
+  my $self = shift;
+  my $code = shift;
+
+  if (defined($code)) {
+    $self->{'__orderby'} = $code;
+  }
+
+  return $self->{'__orderby'};
+}
+
 ######################################################################
 # original interface
 
@@ -225,7 +239,7 @@ sub _directory {
 	if (-f $self->{n3_index}) {
 	    require RDF::Notation3::PrefTriples;
 	    $rdf = RDF::Notation3::PrefTriples->new();
-	    eval {$rdf->parse_file($self->{n3_index})};
+	    eval {_try_to_parse($rdf, $self->{n3_index})};
 	    if ($@) {
 		$self->doError(6,"$dirname, $@");
 		return -1;
@@ -338,86 +352,123 @@ sub _directory {
 	}
     }
 
-    # nested dirs
-    if ($self->{depth} > $level) {
-	$level++;
-	foreach my $d (grep -d, <*>) {
-	    my $path = File::Spec::Functions::catfile($path, $d);
+    foreach my $d (@{$self->_readdir()}) {
 
-	    unless ($stop) {
- 		my $parent_dir = $self->{path} . $path;
- 		$parent_dir =~ s/[^\/\\][^\/\\]+$//;
- 		$parent_dir = File::Spec::Functions::canonpath($parent_dir);
+      if (-d $d) {
 
-		chdir $d or croak "Cannot chdir to $d, $!\n";
-		$self->_directory($path, $d, $level, $rdf_data, $rdf);
-		chdir $parent_dir; 
-	    }
+	# nested dirs
+	if ($self->{depth} > $level) {
+	  $level++;
+	  
+	  my $path = File::Spec::Functions::catfile($path, $d);
+	  
+	  unless ($stop) {
+	    my $parent_dir = $self->{path} . $path;
+	    $parent_dir =~ s/[^\/\\][^\/\\]+$//;
+	    $parent_dir = File::Spec::Functions::canonpath($parent_dir);
+	    
+	    chdir $d or croak "Cannot chdir to $d, $!\n";
+	    $self->_directory($path, $d, $level, $rdf_data, $rdf);
+	    chdir $parent_dir; 
+
+	    $level--;
+	  }
 	}
-	$level--;
-    }
 
-    # final dirs
-    if ($self->{depth} == $level) {
-	foreach my $d (grep -d, <*>) {
-	    my $path = File::Spec::Functions::catfile($path, $d);
-	    my @stat = stat "$d";
-
-	    $d =~ s/&/&amp;/;
-
-	    my @attr = ([name => $d]);
-	    push @attr, ['depth', $level] if $self->{details} > 1;
-	    push @attr, ['uid', $stat[4]] if $self->{details} > 2;
-	    push @attr, ['gid', $stat[5]] if $self->{details} > 2;
-
-	    if ($self->{details} == 1) {
-		$self->doElement('directory', \@attr, undef)
-	    } else {
-		$self->doStartElement('directory', \@attr);
-
-		$self->doElement('path', undef, $path);
-		my $atime = localtime($stat[8]);
-		my $mtime = localtime($stat[9]);
-		$self->doElement('access-time', [[epoch => $stat[8]]], $atime) 
-		  if $self->{details} > 2;
-		$self->doElement('modify-time', [[epoch => $stat[9]]], $mtime);
-
-		# rdf metadata
-		my $position_set = 0;
-		my $cnt = 0;
-		if ($rdf_data) {
-		    $cnt = scalar @{$rdf->{triples}};
-		    for (my $i = 0; $i < $cnt; $i++) {
-			if ($rdf->{triples}->[$i]->[0] eq "<$d>") {
-			    $self->doElement("$doc_prefix:Position",undef,$i+1,1);
-			    $position_set = 1;
-			    last;
-			}
-		    }
-		    my $triples = $rdf->get_triples("<$d>");
-		    foreach (@$triples) {
-			$_->[2] =~ s/^"(.*)"$/$1/;
-			$self->doElement($_->[1],undef,_esc($_->[2]),1);
-		    }
+	# final dirs
+	if ($self->{depth} == $level) {
+	  
+	  my $path = File::Spec::Functions::catfile($path, $d);
+	  my @stat = stat "$d";
+	  
+	  $d =~ s/&/&amp;/;
+	  
+	  my @attr = ([name => $d]);
+	  push @attr, ['depth', $level] if $self->{details} > 1;
+	  push @attr, ['uid', $stat[4]] if $self->{details} > 2;
+	  push @attr, ['gid', $stat[5]] if $self->{details} > 2;
+	  
+	  if ($self->{details} == 1) {
+	    $self->doElement('directory', \@attr, undef)
+	  } else {
+	    $self->doStartElement('directory', \@attr);
+	    
+	    $self->doElement('path', undef, $path);
+	    my $atime = localtime($stat[8]);
+	    my $mtime = localtime($stat[9]);
+	    $self->doElement('access-time', [[epoch => $stat[8]]], $atime) 
+	      if $self->{details} > 2;
+	    $self->doElement('modify-time', [[epoch => $stat[9]]], $mtime);
+	    
+	    # rdf metadata
+	    my $position_set = 0;
+	    my $cnt = 0;
+	    if ($rdf_data) {
+	      $cnt = scalar @{$rdf->{triples}};
+	      for (my $i = 0; $i < $cnt; $i++) {
+		if ($rdf->{triples}->[$i]->[0] eq "<$d>") {
+		  $self->doElement("$doc_prefix:Position",undef,$i+1,1);
+		  $position_set = 1;
+		  last;
 		}
-		if ($self->{rdf_enabled} and not($position_set)) {
-		    $self->_doUnknownPosition($cnt, $doc_prefix);
-		}
-		$self->doEndElement('directory');
+	      }
+	      my $triples = $rdf->get_triples("<$d>");
+	      foreach (@$triples) {
+		$_->[2] =~ s/^"(.*)"$/$1/;
+		$self->doElement($_->[1],undef,_esc($_->[2]),1);
+	      }
 	    }
+	    if ($self->{rdf_enabled} and not($position_set)) {
+	      $self->_doUnknownPosition($cnt, $doc_prefix);
+	    }
+	    $self->doEndElement('directory');
+	  }
 	}
-    }
+      }
 
-    # files
-    unless ($stop) {
-	foreach (grep -f, <*>) {
-	    unless ($_ eq $self->{n3_index}) {
-		$self->_file($_, $level, $rdf_data, $rdf, $doc_prefix);
-	    }
+      else {
+	# files
+	unless ($stop) {
+	  unless ($d eq $self->{n3_index}) {
+	    $self->_file($d, $level, $rdf_data, $rdf, $doc_prefix);
+	  }
 	}
+      }
     }
 
     $self->doEndElement('directory');
+}
+
+sub _readdir {
+  my $self = shift;
+
+  my $path = &Cwd::getcwd();
+  my $dh   = DirHandle->new($path);
+
+  if (! $dh) {
+    carp $!;
+    return [];
+  }
+
+  my @dirs  = ();
+  my @files = ();
+  
+  foreach ($dh->read()) {
+    next if $_ =~ /^(\.{1,2})$/;
+    (-d "$path/$_") ? push @dirs, $_ : push @files, $_;
+  }
+
+  if ($self->order_by() eq "fd") {
+    return [sort(@files),sort(@dirs)];
+  }
+  
+  elsif ($self->order_by() eq "a") {
+    return [sort(@files,@dirs)];
+  }
+
+  else {
+    return [sort(@dirs),sort(@files)];
+  }
 }
 
 sub _file($$$$) {
@@ -506,6 +557,23 @@ sub _esc {
     return $str;
 }
 
+sub _try_to_parse {
+    my ($rdf, $path) = @_;
+    my $done = 0;
+    my $count = 0;
+
+    until ($done or $count == 10) {
+	eval {$rdf->parse_file("$path")};
+	unless ($@) {
+	    $done = 1;
+	} else {
+	    select(undef, undef, undef, 0.02);
+	    $count++;
+	}
+      }
+    die $@ if $@;
+}
+
 sub _msg {
     my ($self, $no) = @_;
 
@@ -542,6 +610,7 @@ Perl itself.
 
 Petr Cimprich, petr@gingerall.cz
 Duncan Cameron, dcameron@bcs.org.uk
+Aaron Straup Cope, asc@vineyard.net
 
 =head1 SEE ALSO
 
