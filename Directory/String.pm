@@ -104,6 +104,9 @@ sub doError {
 	}
 
 	my @attr2 = ([number => $n]);
+	$msg =~ s/&/&amp;/g;
+	$msg =~ s/</&lt;/g;
+	$msg =~ s/>/&gt;/g;
 	$self->doElement('error', \@attr2, $msg);
 
 	$self->doEndElement('dirtree');

@@ -104,6 +104,9 @@ sub doError {
 
     } else {
 
+	$msg =~ s/&/&amp;/g;
+	$msg =~ s/</&lt;/g;
+	$msg =~ s/>/&gt;/g;
 	my $exception = new XML::Directory::Exception (
 		Message => $msg,
 		Exception => undef);

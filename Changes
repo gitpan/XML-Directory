@@ -1,12 +1,16 @@
 Revision history for Perl extension XML::Directory
 ==================================================
 
+0.84  Nov 19, 2001
+	- minor buges fixed
+	- fixed RDF/N3 error handling
+
 0.83  Oct 25, 2001
 	- added a way to stop recursion by meta-data
 	  (doc:Type = 'document')
 
 0.82  Oct 23, 2001
-	- doc:position added to RDF/N3 support
+	- doc:Position added to RDF/N3 support
 
 0.81  Oct 17, 2001
 	- interface to RDF::Notation3 adapted for v0.30 API
