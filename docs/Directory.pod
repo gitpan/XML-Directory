@@ -172,6 +172,35 @@ Enables a support for namespaces.
 
 Disables a support for namespaces.
 
+=item enable_doctype;
+
+ $dir->enable_doctype; 
+
+A DOCTYPE declaration will be generated.
+
+Level of details: 1
+
+ <!DOCTYPE dirtree PUBLIC "-//GA//DTD XML-Directory 1.0 Level1//EN"
+     "http://www.gingerall.org/dtd/XML-Directory/1.0/dirtree-level1.dtd">
+
+Level of details: 2
+
+ <!DOCTYPE dirtree PUBLIC "-//GA//DTD XML-Directory 1.0 Level2//EN"
+     "http://www.gingerall.org/dtd/XML-Directory/1.0/dirtree-level2.dtd">
+
+Level of details: 3
+
+ <!DOCTYPE dirtree PUBLIC "-//GA//DTD XML-Directory 1.0 Level3//EN"
+     "http://www.gingerall.org/dtd/XML-Directory/1.0/dirtree-level3.dtd">
+
+A local copy of DTD files is in the C<dtd> directory.
+
+=item disable_doctype;
+
+ $dir->disable_doctype; 
+
+No DOCTYPE declaration will be generated. This is the default behavior.
+
 =item get_ns_data;
 
  $ns  = $dir->get_ns_data;
@@ -515,9 +544,46 @@ Level of details: 3 (verbose)
  <!ATTLIST size
            unit CDATA #FIXED "bytes">
 
+There is also an modular DTD available, see the C<dtd> directory. 
+You can take a look at an HTML documentation of this DTD by DTDParse
+utility:
+
+=over
+
+=item *
+
+=for html <a href="dirtree/level1/index.html">dirtree, level1</a>
+
+=item *
+
+=for html <a href="dirtree/level2/index.html">dirtree, level2</a>
+
+=item *
+
+=for html <a href="dirtree/level3/index.html">dirtree, level3</a>
+
+=back
+
+This DTD allows you to extend the list of allowable elements using parameter 
+entities, so that extended XML files can be still validated.
+
+An extended vocabulary can be either because of RDF/N3 metadata 
+(see C<enable_rdf>), or, for instance, a directory of .dbk files, might be 
+munged for <articleinfo> data which would be included in the output. The 
+output could then be cached and munged again later using another SAX filter 
+or XSLT.
+
+This is how to extend the DTD:
+
+ <?xml version = "1.0" ?>
+ <!DOCTYPE dirtree SYSTEM [
+   <!ENTITY % file "(mode,size,modify-time,foo)">
+   <!ELEMENT foo (#PCDATA)>
+ ]>...
+
 =head1 VERSION
 
-Current version is 0.92.
+Current version is 0.93.
 
 =head1 LICENSING
 
@@ -531,8 +597,11 @@ Petr Cimprich, petr@gingerall.cz
 
 =head1 CONTRIBUTORS
 
-Duncan Cameron, dcameron@bcs.org.uk,
+Duncan Cameron, dcameron@bcs.org.uk
+
 Chris Snyder, csnyder@longitude.com
+
+Aaron Straup Cope, asc@vineyard.net
 
 =head1 SEE ALSO
 

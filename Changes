@@ -1,6 +1,13 @@
 Revision history for Perl extension XML::Directory
 ==================================================
 
+0.93  Mar 28, 2002
+	- added parameter entities based DTD
+	  [provided by Aaron Straup Cope]
+	- optional DOCTYPE declaration 
+	  (added enable_doctype/disable_doctype methods,
+	   reported via the start_dtd lexical event in SAX)
+
 0.92  Mar 13, 2002
 	- DTD added to docs
 	- minor portability issues on Solaris 7

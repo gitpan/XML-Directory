@@ -11,7 +11,7 @@ require Exporter;
 @ISA = qw(Exporter);
 @EXPORT_OK = qw(get_dir);
 
-$VERSION = '0.92';
+$VERSION = '0.93';
 
 ######################################################################
 # object interface
@@ -31,6 +31,7 @@ sub new {
 	error   => 0,
 	catch_error => 0,	
 	ns_enabled  => 0,
+	doctype     => 0,
 	rdf_enabled => 0,	
 	n3_index    => '',	
 	ns_uri      => 'http://gingerall.org/directory/1.0/',
@@ -140,6 +141,16 @@ sub enable_ns {
 sub disable_ns {
     my ($self) = @_;
     $self->{ns_enabled} = 0;
+}
+
+sub enable_doctype {
+    my ($self) = @_;
+    $self->{doctype} = 1;
+}
+
+sub disable_doctype {
+    my ($self) = @_;
+    $self->{doctype} = 0;
 }
 
 sub get_ns_data {

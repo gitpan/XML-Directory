@@ -43,8 +43,13 @@ sub doStartDocument {
     my $self = shift;
     $self->{xml} = [];
     $self->{level} = 0;
-    push @{$self->{xml}}, 
+    push @{$self->{xml}},
       "<?xml version=\"1.0\" encoding=\"$self->{encoding}\"?>";
+
+    if ($self->{doctype}) {
+	my $doctype = $self->_doctype;
+	push @{$self->{xml}}, $doctype;
+    }
 }
 
 sub doEndDocument {
@@ -55,12 +60,11 @@ sub doStartElement {
     my $pref = '';
     $pref = $self->_ns_prefix unless $qname;
     push @{$self->{xml}}, 
-      '  ' x $self->{level}++ 
+      '  ' x $self->{level}++
 	. "<$pref" 
 	  . "$tag "
- 	    . join(' ', map {qq/$_->[0]="$_->[1]"/} @$attr)
- 	      . ">"
- 		;
+ 	    . join(' ', map {qq/$_->[0]=$_->[1]/} @$attr)
+ 	      . ">";
 }
 
 sub doEndElement {
@@ -81,7 +85,7 @@ sub doElement {
     my $element = '  ' x $self->{level} 
       . "<$pref"  
       . "$tag "
-      . join(' ', map {qq/$_->[0]="$_->[1]"/} @$attr) 
+      . join(' ', map {qq/$_->[0]=$_->[1]/} @$attr) 
       . '>';
     $element =~ s/ >$/>/;
     $element .= $value if $value;
@@ -130,6 +134,23 @@ sub _ns_prefix {
 	$pref = "$self->{ns_prefix}:";
     }
     return $pref;
+}
+
+sub _doctype {
+    my $self = shift;
+
+    my $doctype = '<!DOCTYPE dirtree PUBLIC ' 
+      . '"-//GA//DTD XML-Directory 1.0 Level_DET_//EN"'
+	. "\n    "
+	  . '"http://www.gingerall.org/dtd/XML-Directory/1.0/'
+	    . 'dirtree-level_DET_.dtd">';
+
+    if ($self->{details}) {
+	$doctype =~ s/_DET_/$self->{details}/g; 
+    } else {
+	$doctype =~ s/_DET_/2/g; 
+    }
+    return $doctype;
 }
 
 1;

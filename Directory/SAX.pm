@@ -99,6 +99,9 @@ sub parse {
 sub doStartDocument {
     my $self = shift;
     $self->start_document;
+    if ($self->{doctype}) {
+	$self->_start_dtd;
+    }
 }
 
 sub doEndDocument {
@@ -197,6 +200,27 @@ sub _ns_uri {
 	$uri = "$self->{ns_uri}";
     }
     return $uri;
+}
+
+sub _start_dtd {
+    my $self = shift;
+
+    my $public_id = "-//GA//DTD XML-Directory 1.0 Level_DET_//EN";
+    my $system_id = "http://www.gingerall.org/dtd/XML-Directory/1.0/dirtree-level_DET_.dtd";
+
+    if ($self->{details}) {
+	$public_id =~ s/_DET_/$self->{details}/; 
+	$system_id =~ s/_DET_/$self->{details}/; 
+    } else {
+	$public_id =~ s/_DET_/2/; 
+	$system_id =~ s/_DET_/2/; 
+    }
+    $self->start_dtd( {
+		       Name => 'dirtree',
+		       PublicId => $public_id,
+		       SystemId => $system_id,
+		      } );
+    $self->end_dtd;
 }
 
 1;

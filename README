@@ -69,5 +69,8 @@ MyHandler.pm
 MyErrorHandler.pm
 	working template of SAX error handler
 
+MyLexicalHandler.pm
+	working template of SAX lexical handler
+
 index.n3
 	an example of RDF/N3 file with files/directories meta-data
