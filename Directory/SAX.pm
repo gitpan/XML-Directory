@@ -18,7 +18,7 @@ sub new {
 
     $options->{path} = cwd   unless $options->{path};
     $options->{details} = 2  unless $options->{details};
-    $options->{depth} = 1000 unless $options->{depth};
+    $options->{depth} = 1000 unless defined $options->{depth};
 
     $options->{path} = cwd if $options->{path} eq '.';
 

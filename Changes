@@ -1,8 +1,11 @@
 Revision history for Perl extension XML::Directory
 ==================================================
 
+0.97  Jun 21, 2002
+	- minor fix in X:D:SAX constructor (depth => 0)
+
 0.96  May 17, 2002
-        - Added orderby to head element
+        - added orderby to head element
         - updated SAX::doElement to create a singleton if
 	  necessary
 	- updated DTD to version 1.01 [Aaron Straup Cope]
