@@ -6,3 +6,4 @@ Directory.pm
 test.pl
 scripts/dir2xml.pl
 scripts/dir2xml_cgi.pl
+scripts/dir2xml_oo.pl

@@ -1,5 +1,11 @@
 Revision history for Perl extension XML::Directory.
 
-0.30  Tue Aug  7 16:22:38 2001
+0.30  Aug 7, 2001
 	- original version; created by h2xs 1.20
 	- based on a utility script called dir2xml, v0.2
+
+0.40  Aug 21, 2001
+	- object interface (XML::Directory class)
+	- maximal number of nested sub-directories can be limited
+	  (maximal depth)
+	- number of details is controlled (brief, normal, verbose)
