@@ -1,0 +1,8 @@
+Changes
+MANIFEST
+README
+Makefile.PL
+Directory.pm
+test.pl
+scripts/dir2xml.pl
+scripts/dir2xml_cgi.pl
