@@ -29,21 +29,34 @@ The module builds and installs in a standard way:
 
 To install on Windows (with ActivePerl), just replace "make" with "nmake".
 
-5. Scripts
-==========
+5. Examples
+===========
 
-The scripts directory contains examples of scripts using this module.
+The examples directory contains examples of scripts using this module.
 
-dir2xml.pl: a command line interface
+dir2xml.pl
+	command line interface
 	Usage: ./dir2xml.pl <directory>
 
-dir2xml_cgi.pl: a CGI/mod_perl interface (requires CGI_Lite)
+dir2xml_cgi.pl
+	CGI/mod_perl interface (requires CGI_Lite)
 	Usage: http://<host>/<cgi-bin>/dir2xml_cgi.pl?dir=<directory>
 
-dir2xml_oo.pl: a command line interface using the XML::Directory class
+dir2xml_oo.pl
+	command line interface using the XML::Directory class
 	Usage: ./dir2xml.pl <directory>
+
+dir2xml_sax.pl
+	command line interface using the XML::Directory SAX generator
+	Usage: ./dir2xml.pl <directory>
+
+MyHandler.pm
+	working template of SAX content handler
+
+MyErrorHandler.pm
+	working template of SAX error handler
 
 6. To Do
 ========
 
-- SAX interface
+- reading RDF description

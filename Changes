@@ -1,8 +1,14 @@
 Revision history for Perl extension XML::Directory.
+===================================================
 
-0.30  Aug 7, 2001
-	- original version; created by h2xs 1.20
-	- based on a utility script called dir2xml, v0.2
+0.50  Aug 29, 2001
+	- SAX generator added (parse_SAX, set_content_handler and
+	  set_error_handler methods)
+
+0.41  Aug 24, 2001
+	- get_string method added
+	- error handling
+	- fixed a maxdepth defaulting bug
 
 0.40  Aug 21, 2001
 	- object interface (XML::Directory class)
@@ -10,7 +16,6 @@ Revision history for Perl extension XML::Directory.
 	  (maximal depth)
 	- number of details is controlled (brief, normal, verbose)
 
-0.41  Aug 24, 2001
-	- get_string method added
-	- error handling
-	- fixed a maxdepth defaulting bug
+0.30  Aug 7, 2001
+	- original version; created by h2xs 1.20
+	- based on a utility script dir2xml.pl, v0.2
