@@ -24,7 +24,8 @@ Perl itself.
 There are no prerequisites for this module. However, if you want to use
 the XML::Directory::Apache module, Apache and mod_perl are required.
 
-To include RDF/N3 meta-data, RDF::Notation3 module is required.
+To include RDF/N3 meta-data, RDF::Notation3 module version 0.30 or later
+is required.
 
 4. Build and Install
 ====================

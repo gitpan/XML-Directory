@@ -1,8 +1,11 @@
 Revision history for Perl extension XML::Directory
 ==================================================
 
+0.81  Oct 17, 2001
+	- interface to RDF::Notation3 adapted for v0.30 API
+
 0.80  Oct 9, 2001
-	- support for RDF metadata in RDF/Notation3 files
+	- support for RDF meta-data in RDF/Notation3 files
 	- SAX driver uses the latest PerlSAX2 notation
 	  ({ns}local attributes keys)
 	- XML encoding can be changed for String

@@ -10,7 +10,7 @@ require Exporter;
 our @ISA = qw(Exporter);
 
 our @EXPORT_OK = qw(get_dir);
-our $VERSION = '0.80';
+our $VERSION = '0.81';
 
 
 ######################################################################
@@ -30,6 +30,7 @@ sub new {
 	catch_error => 0,	
 	ns_enabled  => 0,
 	rdf_enabled => 0,	
+	n3_index    => '',	
 	ns_uri      => 'http://gingerall.org/directory',
 	ns_prefix   => 'xd',
 	encoding    => 'utf-8',	
@@ -198,7 +199,7 @@ sub _directory {
     if ($self->{rdf_enabled}) {
 	require RDF::Notation3::PrefTriples;
 	$rdf = new RDF::Notation3::PrefTriples;
-	eval {$rdf->parse($self->{n3_index})};
+	eval {$rdf->parse_file($self->{n3_index})};
 	$rdf_data = 1 unless $@;
     }
 
