@@ -1,6 +1,11 @@
 Revision history for Perl extension XML::Directory
 ==================================================
 
+1.00  Jan 26, 2004
+        - added alphabetical descending sorting
+          $dir->order_by('z');
+        - fixed a bug of setting with order_by
+
 0.99  Oct 7, 2002
 	- warning caused by order_by() function fixed
           [patch by Gerhard Wannemacher]
@@ -55,7 +60,7 @@ Revision history for Perl extension XML::Directory
 	- RDF meta-data are read also for the uppermost directory
 
 0.84  Nov 19, 2001
-	- minor buges fixed
+	- minor bugs fixed
 	- fixed RDF/N3 error handling
 
 0.83  Oct 25, 2001

@@ -164,21 +164,25 @@ Returns current number of nested sub-directories.
 
  $dir->order_by($code)
 
-Sort contents of a directory based. Valid options for I<$code> are :
+Sort contents of a directory. Valid options for I<$code> are :
 
 =over
 
 =item df
 
-directory, file I<default>
+directories, files I<default>
 
 =item fd
 
-file, directory
+files, directories
 
 =item a
 
-alphabetical
+alphabetical ascending
+
+=item z
+
+alphabetical descending
 
 =back
 

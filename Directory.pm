@@ -14,7 +14,7 @@ require Exporter;
 @ISA = qw(Exporter);
 @EXPORT_OK = qw(get_dir);
 
-$VERSION = '0.99';
+$VERSION = '1.00';
 
 ######################################################################
 # object interface
@@ -202,10 +202,11 @@ sub disable_rdf {
 }
 
 sub order_by {
-  my ($self, $code) = shift;
+  my ($self, $code) = @_;
 
   if (defined($code)) {
     $self->{'__orderby'} = $code;
+
   }
 
   return $self->{'__orderby'} || "df";
@@ -464,6 +465,10 @@ sub _readdir {
   
   elsif ($self->order_by() eq "a") {
     return [sort(@files,@dirs)];
+  }
+
+  elsif ($self->order_by() eq "z") {
+    return [sort {$b cmp $a} (@files,@dirs)];
   }
 
   else {
