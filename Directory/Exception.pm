@@ -20,9 +20,7 @@ __END__
 
 =head1 NAME
 
-XML::Directory::Exception - a simple helper class used to stringify SAX 
-exceptions. The idea of overloading attributes comes from XML::LibXML
-by Matt Sergeant. See XML::Directory docs for details.
+XML::Directory::Exception - a helper class to handle SAX exceptions 
 
 =head1 LICENSING
 

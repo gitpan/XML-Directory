@@ -2,7 +2,7 @@
 ==============
 
 XML::Directory - Perl extension to get a content of directory including 
-sub-directories as an XML file. The current version is 0.51. See Changes
+sub-directories as an XML file. The current version is 0.60. See Changes
 for a list of recent changes.
 
 2. License
@@ -15,7 +15,8 @@ Perl itself.
 3. Prerequisites
 ================
 
-There are no prerequisites for this module.
+There are no prerequisites for this module. However, if you want to use
+the XML::Directory::Apache module, Apache and mod_perl are required.
 
 4. Build and Install
 ====================

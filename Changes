@@ -1,5 +1,10 @@
-Revision history for Perl extension XML::Directory.
-===================================================
+Revision history for Perl extension XML::Directory
+==================================================
+
+0.60  Sep 7, 2001
+	- mod_perl interface added
+	- support for namespaces (optional)
+	- parameters stored in XML header
 
 0.51  Aug 30, 2001
 	- fixed a SAX return value error
